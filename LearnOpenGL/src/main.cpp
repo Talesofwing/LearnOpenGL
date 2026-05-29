@@ -106,8 +106,10 @@ int main() {
 	shaderProgram2 = glCreateProgram();
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
 	glAttachShader(shaderProgram2, vertexShader);
 	glAttachShader(shaderProgram2, fragmentShader2);
+	glLinkProgram(shaderProgram2);
 	// check for linking erros
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
 	if (!success) {
@@ -186,13 +188,15 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// draw triangle
+		
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
 		glUseProgram(shaderProgram);
-		glLinkProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glUseProgram(shaderProgram2);
-		glLinkProgram(shaderProgram2);
 		glBindVertexArray(VAO2);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
