@@ -1,0 +1,19 @@
+# Visual Studio 資料夾
+Debug/
+Release/
+x64/
+Win32/
+ipch/
+.vs
+
+# Visual Studio 檔案
+*.opensdf
+*.sdf
+*.suo
+*.vcxproj.user
+*.plist.cache
+
+# OpenGL 專案輸出版本（可選）
+Debug/*
+Release/*
+x64/*
