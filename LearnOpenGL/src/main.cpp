@@ -108,21 +108,24 @@ int main() {
 	//	1, 2, 3    // second triangle
 	//};
 
-	// Exercises
+	// Exercises =====
 	float vertices[] = {
-		// first triangle
 		 0.5f,  0.5f, 0.0f,  // top right
 		 0.5f, -0.5f, 0.0f,  // bottom right
 		-0.5f,  0.5f, 0.0f,  // top left 
-		// second triangle
+	};
+	float vertices2[] = {
 		 0.5f, -0.5f, 0.0f,  // bottom right
 		-0.5f, -0.5f, 0.0f,  // bottom left
 		-0.5f,  0.5f, 0.0f   // top left
 	};
+	// ===== Exercises
 
-	unsigned int VBO, VAO, EBO;
+	unsigned int VBO, VBO2, VAO, VAO2, EBO;
 	glGenVertexArrays(1, &VAO);
+	glGenVertexArrays(1, &VAO2);
 	glGenBuffers(1, &VBO);
+	glGenBuffers(2, &VBO2);
 	//glGenBuffers(1, &EBO);
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(VAO);
@@ -134,6 +137,14 @@ int main() {
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	// Exercises =====
+	glBindVertexArray(VAO2);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO2);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// ===== Exercises
 
 	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -159,8 +170,12 @@ int main() {
 
 		// draw triangle
 		glUseProgram(shaderProgram);
+		// Exercises =====
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindVertexArray(VAO2);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		// ===== Exercises
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
