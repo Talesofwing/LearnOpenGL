@@ -3,6 +3,7 @@
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aColor;
 
+out vec3 ourPosition;
 out vec3 ourColor;
 
 uniform float x_offset;
@@ -10,5 +11,6 @@ uniform float x_offset;
 void main()
 {
 	ourColor = aColor;
-	gl_Position = vec4(aPos.x + x_offset, -aPos.y, aPos.z, 1.0);
+	ourPosition = aPos;
+	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
 };
