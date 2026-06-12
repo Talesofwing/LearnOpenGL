@@ -22,4 +22,17 @@
       <Filter>來源檔案</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\shaders\Shader.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\shaders\shader.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\shader.fs">
+      <Filter>資源檔</Filter>
+    </None>
+  </ItemGroup>
 </Project>
