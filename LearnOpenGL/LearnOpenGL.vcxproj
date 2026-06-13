@@ -136,6 +136,7 @@
   <ItemGroup>
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\stb_image_implementation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\shaders\Shader.h" />
