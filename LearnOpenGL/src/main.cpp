@@ -131,6 +131,7 @@ int main() {
 		ourShader.use();
 		glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);	// set it manually
 		ourShader.setInt("texture2", 1);								// or with shader class
+		ourShader.setFloat("interp", getValue());
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
