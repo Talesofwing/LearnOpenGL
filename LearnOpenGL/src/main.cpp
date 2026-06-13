@@ -1,9 +1,14 @@
+#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Shader.h"
 #include "stb_image.h"
+
 
 // Settings
 const unsigned int SCR_WIDTH = 800;
@@ -23,7 +28,18 @@ float getValue() {
 	return (sin(time) / 2.0f) + 0.5f;
 }
 
+void glmTest() {
+	glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);;
+	glm::mat4 trans = glm::mat4(1.0f);
+	trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
+	vec = trans * vec;
+	std::cout << vec.x << ", " << vec.y << ", " << vec.z << std::endl;
+}
+
 int main() {
+	// ===== glm testing =====
+	//glmTest();
+
 	// ===== glfw initialize and configure =====
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -55,10 +71,10 @@ int main() {
 	// ===== set up vertex data & index data (and buffer(s)) and configure vertex attributes & index attributes =====
 	float vertices[] = {
 		// positions          // colors           // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   2.0f, 2.0f,   // top right
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   2.0f, 0.0f,   // bottom right
+		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
 		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 2.0f    // top left 
+		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
 	};
 	unsigned int indices[] = {
 		0, 1, 2,
@@ -116,6 +132,8 @@ int main() {
 	// release texture
 	stbi_image_free(data);
 
+	unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+
 	// ===== render loop =====
 	while (!glfwWindowShouldClose(window)) {
 		// input
@@ -131,6 +149,13 @@ int main() {
 		ourShader.use();
 		glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);	// set it manually
 		ourShader.setInt("texture2", 1);								// or with shader class
+		
+		// scale & rotate the container object
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+		
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
