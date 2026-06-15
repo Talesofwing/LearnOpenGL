@@ -26,7 +26,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\shaders\Shader.h">
+    <ClInclude Include="src\Shader.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
   </ItemGroup>
