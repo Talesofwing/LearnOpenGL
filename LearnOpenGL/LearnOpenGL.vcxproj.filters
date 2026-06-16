@@ -40,5 +40,11 @@
     <None Include="src\shaders\shader.fs">
       <Filter>資源檔</Filter>
     </None>
+    <None Include="src\shaders\lightShader.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\lightShader.vs">
+      <Filter>資源檔</Filter>
+    </None>
   </ItemGroup>
 </Project>
