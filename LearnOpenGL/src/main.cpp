@@ -185,10 +185,6 @@ int main() {
 
 	Shader lightShader("lightShader.vs", "lightShader.fs");
 
-	float speed = 1.0f;
-	float angle = 0.0f;
-	float radius = 2.0f;
-
 	// ===== render loop =====
 	while (!glfwWindowShouldClose(window)) {
 		// time
@@ -207,12 +203,6 @@ int main() {
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
-
-		// light rotation
-		angle += speed * deltaTime;
-		lightPos.x = cos(angle) * radius;
-		lightPos.y = radius;
-		lightPos.z = sin(angle) * radius;		
 
 		// draw cube
 		ourShader.use();

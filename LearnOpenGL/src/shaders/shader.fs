@@ -24,8 +24,8 @@ void main()
     float diffuseFactor = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diffuseFactor * lightColor;
 
-    float specularStrength = 0.5;
-    float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    float specularStrength = 0.9;
+    float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0), 128);
     vec3 specular = specularStrength * specularFactor * lightColor;
 
     vec3 result = (ambient + diffuse + specular) * objectColor;
