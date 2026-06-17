@@ -203,7 +203,7 @@ int main() {
 
 	// textures
 	unsigned int diffuseMap = loadTexture("resources/imgs/container2.png");
-	unsigned int specularMap = loadTexture("resources/imgs/container2_specular.png");
+	unsigned int specularMap = loadTexture("resources/imgs/lighting_maps_specular_color.png");
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, diffuseMap);
 	glActiveTexture(GL_TEXTURE1);
