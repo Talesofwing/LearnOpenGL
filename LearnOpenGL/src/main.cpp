@@ -204,13 +204,10 @@ int main() {
 	// textures
 	unsigned int diffuseMap = loadTexture("resources/imgs/container2.png");
 	unsigned int specularMap = loadTexture("resources/imgs/container2_specular.png");
-	unsigned int emissionMap = loadTexture("resources/imgs/matrix.jpg");
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, diffuseMap);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, specularMap);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, emissionMap);
 
 	// light object
 	unsigned int lightVBO, lightVAO;
@@ -251,11 +248,8 @@ int main() {
 		ourShader.setMat4("model", model);
 		ourShader.setMat4("view", view);
 		ourShader.setMat4("projection", projection);
-		//ourShader.setVec3("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
-		//ourShader.setVec3("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
 		ourShader.setInt("material.diffuse", 0);
 		ourShader.setInt("material.specular", 1);
-		ourShader.setInt("material.emission", 2);
 		ourShader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
 		ourShader.setVec3("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
 		ourShader.setVec3("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
