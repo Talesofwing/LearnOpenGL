@@ -253,10 +253,10 @@ int main() {
 		ourShader.setInt("material.diffuse", 0);
 		ourShader.setInt("material.specular", 1);
 		ourShader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
-		ourShader.setVec3("light.ambient", glm::vec3(1.0f, 0.2f, 0.2f));
-		ourShader.setVec3("light.diffuse", glm::vec3(1.0f, 0.5f, 0.5f));
-		ourShader.setVec3("light.specular", glm::vec3(0.0f, 1.0f, 1.0f));
-		ourShader.setFloat("material.shininess", 8.0f);
+		ourShader.setVec3("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+		ourShader.setVec3("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
+		ourShader.setVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+		ourShader.setFloat("material.shininess", 32.0f);
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
