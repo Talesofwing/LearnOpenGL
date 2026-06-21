@@ -62,8 +62,9 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir) {
     vec3 diffuse = light.diffuse * max(dot(normal, lightDir), 0.0) * vec3(texture(material.diffuse, TexCoords));
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    vec3 specular = light.specular * pow(max(dot(viewDir, reflectDir), 0.0), material.shininess) * vec3(texture(material.specular, TexCoords));    // attenuation
-    float distance    = length(light.position - viewPos);
+    vec3 specular = light.specular * pow(max(dot(viewDir, reflectDir), 0.0), material.shininess) * vec3(texture(material.specular, TexCoords));    
+    // attenuation
+    float distance = length(light.position - WorldPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance)); 
     // combine results
     return (ambient + diffuse + specular) * attenuation;
@@ -95,9 +96,10 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 viewDir) {
     vec3 diffuse = light.diffuse * max(dot(normal, lightDir), 0.0) * vec3(texture(material.diffuse, TexCoords));
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    vec3 specular = light.specular * pow(max(dot(viewDir, reflectDir), 0.0), material.shininess) * vec3(texture(material.specular, TexCoords));    // attenuation
-    float distance    = length(light.position - viewPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+    vec3 specular = light.specular * pow(max(dot(viewDir, reflectDir), 0.0), material.shininess) * vec3(texture(material.specular, TexCoords));    
+    // attenuation
+    float distance = length(light.position - WorldPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance)); 
     // spot light intensity
     float theta = dot(lightDir, normalize(-light.direction));
     float epsilon = light.innerCutOff - light.outerCutOff;
