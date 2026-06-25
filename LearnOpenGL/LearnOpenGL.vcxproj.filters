@@ -32,18 +32,24 @@
     <ClInclude Include="src\Camera.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="src\Vertex.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Texture.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Mesh.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Model.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\shader.vs">
       <Filter>資源檔</Filter>
     </None>
     <None Include="src\shaders\shader.fs">
-      <Filter>資源檔</Filter>
-    </None>
-    <None Include="src\shaders\lightShader.fs">
-      <Filter>資源檔</Filter>
-    </None>
-    <None Include="src\shaders\lightShader.vs">
       <Filter>資源檔</Filter>
     </None>
   </ItemGroup>

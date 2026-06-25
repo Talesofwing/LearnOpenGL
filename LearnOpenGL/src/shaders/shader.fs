@@ -7,6 +7,8 @@ struct Material {
 }; 
 uniform Material material;
 
+uniform sampler2D texture_diffuse1;
+
 in vec3 WorldPos;
 in vec3 Normal;
 in vec2 TexCoords;
@@ -123,5 +125,6 @@ void main()
     // phase 3: Spot light
     result += CalcSpotLight(spotLight, norm, viewDir);
 
-    FragColor = vec4(result, 1.0);
+    //FragColor = vec4(result, 1.0);
+    FragColor = texture(texture_diffuse1, TexCoords);
 }
