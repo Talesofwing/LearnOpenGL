@@ -89,7 +89,6 @@ private:
 
     // processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
     void processNode(aiNode* node, const aiScene* scene) {
-        std::cout << node->mNumChildren << std::endl;
         // process each mesh located at the current node
         for (unsigned int i = 0; i < node->mNumMeshes; i++) {
             // the node object only contains indices to index the actual objects in the scene. 
