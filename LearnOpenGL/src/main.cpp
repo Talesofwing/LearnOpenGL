@@ -134,6 +134,9 @@ int main() {
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// configure mouse state
 	// ---------------------
@@ -144,6 +147,7 @@ int main() {
 	// build and compile shaders
 	// -------------------------
 	Shader ourShader("shader.vs", "shader.fs");
+	Shader shaderSingleColor("shader.vs", "shaderSingleColor.fs");
 
 	float cubeVertices[] = {
 		// positions          // texture Coords
@@ -248,15 +252,32 @@ int main() {
 
 		// clear
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		ourShader.use();
+		// set uniforms
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+		shaderSingleColor.use();
+		shaderSingleColor.setMat4("view", view);
+		shaderSingleColor.setMat4("projection", projection);
+
+		ourShader.use();
 		ourShader.setMat4("view", view);
 		ourShader.setMat4("projection", projection);
+
+		// floor
+		glStencilMask(0x00);
+		glBindVertexArray(planeVAO);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		ourShader.setMat4("model", glm::mat4(1.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+
 		// cubes
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
 		glBindVertexArray(cubeVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cubeTexture);
@@ -267,12 +288,30 @@ int main() {
 		model = glm::translate(model, glm::vec3(2.0f, 0.01f, 0.0f));
 		ourShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		// floor
-		glBindVertexArray(planeVAO);
-		glBindTexture(GL_TEXTURE_2D, floorTexture);
-		ourShader.setMat4("model", glm::mat4(1.0f));
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		// cubes outline
+		float scale = 1.05f;
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00); // disable writing to the stencil buffer
+		glDisable(GL_DEPTH_TEST);
+		shaderSingleColor.use();
+		glBindVertexArray(cubeVAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.01f, -1.0f));
+		model = glm::scale(model, glm::vec3(scale, scale, scale));
+		shaderSingleColor.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.01f, 0.0f));
+		model = glm::scale(model, glm::vec3(scale, scale, scale));
+		shaderSingleColor.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// reset
 		glBindVertexArray(0);
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glEnable(GL_DEPTH_TEST);
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
 		glfwSwapBuffers(window);
