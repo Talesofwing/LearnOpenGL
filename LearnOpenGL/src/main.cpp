@@ -144,6 +144,10 @@ int main() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+
 	// configure mouse state
 	// ---------------------
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -157,66 +161,66 @@ int main() {
 
 	float cubeVertices[] = {
 		// positions          // texture Coords
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		-0.5f,-0.5f,-0.5f, 0.0f,0.0f,
+		-0.5f, 0.5f,-0.5f, 0.0f,1.0f,
+		 0.5f, 0.5f,-0.5f, 1.0f,1.0f,
+		 0.5f, 0.5f,-0.5f, 1.0f,1.0f,
+		 0.5f,-0.5f,-0.5f, 1.0f,0.0f,
+		-0.5f,-0.5f,-0.5f, 0.0f,0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,-0.5f, 0.5f, 0.0f,0.0f,
+		 0.5f,-0.5f, 0.5f, 1.0f,0.0f,
+		 0.5f, 0.5f, 0.5f, 1.0f,1.0f,
+		 0.5f, 0.5f, 0.5f, 1.0f,1.0f,
+		-0.5f, 0.5f, 0.5f, 0.0f,1.0f,
+		-0.5f,-0.5f, 0.5f, 0.0f,0.0f,
 
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, 0.5f, 0.5f, 1.0f,0.0f,
+		-0.5f, 0.5f,-0.5f, 1.0f,1.0f,
+		-0.5f,-0.5f,-0.5f, 0.0f,1.0f,
+		-0.5f,-0.5f,-0.5f, 0.0f,1.0f,
+		-0.5f,-0.5f, 0.5f, 0.0f,0.0f,
+		-0.5f, 0.5f, 0.5f, 1.0f,0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, 0.5f, 0.5f, 1.0f,0.0f,
+		 0.5f,-0.5f, 0.5f, 0.0f,0.0f,
+		 0.5f,-0.5f,-0.5f, 0.0f,1.0f,
+		 0.5f,-0.5f,-0.5f, 0.0f,1.0f,
+		 0.5f, 0.5f,-0.5f, 1.0f,1.0f,
+		 0.5f, 0.5f, 0.5f, 1.0f,0.0f,
 
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f,-0.5f,-0.5f, 0.0f,1.0f,
+		 0.5f,-0.5f,-0.5f, 1.0f,1.0f,
+		 0.5f,-0.5f, 0.5f, 1.0f,0.0f,
+		 0.5f,-0.5f, 0.5f, 1.0f,0.0f,
+		-0.5f,-0.5f, 0.5f, 0.0f,0.0f,
+		-0.5f,-0.5f,-0.5f, 0.0f,1.0f,
 
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+		-0.5f, 0.5f,-0.5f, 0.0f,1.0f,
+		-0.5f, 0.5f, 0.5f, 0.0f,0.0f,
+		 0.5f, 0.5f, 0.5f, 1.0f,0.0f,
+		 0.5f, 0.5f, 0.5f, 1.0f,0.0f,
+		 0.5f, 0.5f,-0.5f, 1.0f,1.0f,
+		-0.5f, 0.5f,-0.5f, 0.0f,1.0f
 	};
 	float vegetationVertices[] = {
 		// positions		// texture Coords
 		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
-		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
 		 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f
+		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
 	};
 	float planeVertices[] = {
 		// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
 		 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-		-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
 		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+		-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
 
 		 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-		 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+		 5.0f, -0.5f, -5.0f,  2.0f, 2.0f,
+		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f
 	};
 	std::vector<glm::vec3> vegetation;
 	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
@@ -325,6 +329,7 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// sprites
+		glDisable(GL_CULL_FACE);
 		glBindVertexArray(vegetationVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, windowTexture);
@@ -340,6 +345,7 @@ int main() {
 			spriteShader.setMat4("model", model);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
+		glEnable(GL_CULL_FACE);
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
 		glfwSwapBuffers(window);
