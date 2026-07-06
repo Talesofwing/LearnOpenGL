@@ -148,6 +148,8 @@
     <ClInclude Include="src\Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\shaders\quadshader.fs" />
+    <None Include="src\shaders\quadshader.vs" />
     <None Include="src\shaders\shader.fs" />
     <None Include="src\shaders\shader.vs" />
     <None Include="src\shaders\spriteshader.fs" />

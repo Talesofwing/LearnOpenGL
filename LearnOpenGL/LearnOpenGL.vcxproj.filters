@@ -55,5 +55,11 @@
     <None Include="src\shaders\spriteshader.fs">
       <Filter>資源檔</Filter>
     </None>
+    <None Include="src\shaders\quadshader.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\quadshader.fs">
+      <Filter>資源檔</Filter>
+    </None>
   </ItemGroup>
 </Project>
