@@ -233,6 +233,16 @@ int main() {
 		 1.0f, -1.0f,  1.0f, 0.0f,
 		 1.0f,  1.0f,  1.0f, 1.0f
 	};
+	float quadVertices2[] = {
+		// positions   // texCoords
+		-0.3f,  0.9f,  0.0f, 1.0f,
+		-0.3f,  0.3f,  0.0f, 0.0f,
+		 0.3f,  0.3f,  1.0f, 0.0f,
+
+		-0.3f,  0.9f,  0.0f, 1.0f,
+		 0.3f,  0.3f,  1.0f, 0.0f,
+		 0.3f,  0.9f,  1.0f, 1.0f
+	};
 	std::vector<glm::vec3> vegetation;
 	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
 	vegetation.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
@@ -288,6 +298,18 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 	glBindVertexArray(0);
+	// quad VAO2
+	unsigned int quadVAO2, quadVBO2;
+	glGenVertexArrays(1, &quadVAO2);
+	glGenBuffers(1, &quadVBO2);
+	glBindVertexArray(quadVAO2);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO2);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices2), &quadVertices2, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glBindVertexArray(0);
 
 	// load textures
 	// -------------
@@ -331,6 +353,34 @@ int main() {
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// framebuffer2
+	// ------------
+	unsigned int framebuffer2;
+	glGenFramebuffers(1, &framebuffer2);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer2);
+
+	unsigned int textureColorbuffer2;
+	glGenTextures(1, &textureColorbuffer2);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer2);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer2, 0);
+
+	unsigned int rbo2;
+	glGenRenderbuffers(1, &rbo2);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo2);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo2);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 
@@ -392,6 +442,50 @@ int main() {
 		glBindVertexArray(quadVAO);
 		glDisable(GL_DEPTH_TEST);
 		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		// back rendering
+		camera.Yaw += 180.0f;
+		camera.ProcessMouseMovement(0, 0, false);
+		view = camera.GetViewMatrix();
+		camera.Yaw -= 180.0f;
+		camera.ProcessMouseMovement(0, 0, true);
+
+		ourShader.use();
+		ourShader.setMat4("view", view);
+		ourShader.setMat4("projection", projection);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer2);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+
+		// floor
+		glBindVertexArray(planeVAO);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		ourShader.setMat4("model", glm::mat4(1.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+
+		// cubes
+		model = glm::mat4(1.0);
+		glBindVertexArray(cubeVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, continaerTexture);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.01f, -1.0f));
+		ourShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.01f, 0.0f));
+		ourShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+
+		quadShader.use();
+		glBindVertexArray(quadVAO2);
+		glDisable(GL_DEPTH_TEST);
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer2);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
