@@ -135,11 +135,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="src\shaders\reflection.fs">
+      <FileType>Document</FileType>
+    </None>
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\stb_image_implementation.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\shaders\reflection.vs" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Model.h" />
@@ -150,8 +154,12 @@
   <ItemGroup>
     <None Include="src\shaders\quadshader.fs" />
     <None Include="src\shaders\quadshader.vs" />
+    <None Include="src\shaders\refraction.fs" />
+    <None Include="src\shaders\refraction.vs" />
     <None Include="src\shaders\shader.fs" />
     <None Include="src\shaders\shader.vs" />
+    <None Include="src\shaders\skybox.fs" />
+    <None Include="src\shaders\skybox.vs" />
     <None Include="src\shaders\spriteshader.fs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
