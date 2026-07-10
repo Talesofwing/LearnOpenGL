@@ -171,8 +171,8 @@ int main() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	//glEnable(GL_CULL_FACE);
+	//glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
 	// configure mouse state
@@ -191,7 +191,7 @@ int main() {
 	Shader refractionShader("refraction.vs", "refraction.fs");
 
 	float cubeVertices[] = {
-		// positions           // normals
+		// positions          // normals
 		// back face
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -443,12 +443,26 @@ int main() {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	// Setup UBO
+	// =========
+	unsigned int uniformBlockIndex = glGetUniformBlockIndex(ourShader.ID, "Matrices");
+	glUniformBlockBinding(ourShader.ID, uniformBlockIndex, 0);
+
+	unsigned int uboMatrices;
+	glGenBuffers(1, &uboMatrices);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+
 	// Load model
 	// ==========
-	Model backpack("backpack/backpack.obj");
+	//Model backpack("backpack/backpack.obj");
 
 	// Wireframe draw
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	//glEnable(GL_PROGRAM_POINT_SIZE);
 
 	// render loop
 	// -----------
@@ -473,34 +487,32 @@ int main() {
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		view = camera.GetViewMatrix();
-		refractionShader.use();
-		refractionShader.setMat4("view", view);
-		refractionShader.setMat4("projection", projection);
-		refractionShader.setVec3("cameraPos", camera.Position);
+		ourShader.use();
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 		// cube
-		//glBindVertexArray(cubeVAO);
+		glBindVertexArray(cubeVAO);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemap);
-		//model = glm::translate(model, glm::vec3(-1.0f, 0.01f, -1.0f));
-		refractionShader.setMat4("model", model);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// backpack
-		backpack.Draw(refractionShader);
+		glBindTexture(GL_TEXTURE, cubeTexture);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.01f, -1.0f));
+		ourShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// skybox
-		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-		glDepthMask(GL_FALSE);
-		glDepthFunc(GL_LEQUAL);
-		skyboxShader.use();
-		skyboxShader.setMat4("view", view);
-		skyboxShader.setMat4("projection", projection);
-		glBindVertexArray(skyboxVAO);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemap);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LESS);
+		//view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+		//glDepthMask(GL_FALSE);
+		//glDepthFunc(GL_LEQUAL);
+		//skyboxShader.use();
+		//skyboxShader.setMat4("view", view);
+		//skyboxShader.setMat4("projection", projection);
+		//glBindVertexArray(skyboxVAO);
+		//glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemap);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDepthMask(GL_TRUE);
+		//glDepthFunc(GL_LESS);
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
 		glfwSwapBuffers(window);
