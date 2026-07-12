@@ -135,6 +135,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="src\shaders\explode.gs" />
+    <None Include="src\shaders\model.fs" />
+    <None Include="src\shaders\model.vs" />
+    <None Include="src\shaders\normalVisualizer.fs" />
+    <None Include="src\shaders\normalVisualizer.vs" />
     <None Include="src\shaders\reflection.fs">
       <FileType>Document</FileType>
     </None>
@@ -143,6 +148,7 @@
     <ClCompile Include="src\stb_image_implementation.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\shaders\normalVisualizer.gs" />
     <ClInclude Include="src\shaders\reflection.vs" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Mesh.h" />

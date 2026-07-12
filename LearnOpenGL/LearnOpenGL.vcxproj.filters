@@ -47,6 +47,9 @@
     <ClInclude Include="src\shaders\reflection.vs">
       <Filter>資源檔</Filter>
     </ClInclude>
+    <ClInclude Include="src\shaders\normalVisualizer.gs">
+      <Filter>資源檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\shader.vs">
@@ -77,6 +80,21 @@
       <Filter>資源檔</Filter>
     </None>
     <None Include="src\shaders\refraction.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\explode.gs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\model.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\model.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\normalVisualizer.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\normalVisualizer.vs">
       <Filter>資源檔</Filter>
     </None>
   </ItemGroup>
