@@ -136,10 +136,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="src\shaders\explode.gs" />
+    <None Include="src\shaders\instancing.fs" />
+    <None Include="src\shaders\instancing.vs" />
     <None Include="src\shaders\model.fs" />
     <None Include="src\shaders\model.vs" />
     <None Include="src\shaders\normalVisualizer.fs" />
     <None Include="src\shaders\normalVisualizer.vs" />
+    <None Include="src\shaders\rock.fs" />
+    <None Include="src\shaders\rock.vs" />
     <None Include="src\shaders\reflection.fs">
       <FileType>Document</FileType>
     </None>
