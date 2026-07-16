@@ -29,11 +29,12 @@ bool firstMouse = true;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 // Lighting
-glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
-bool isBlinn = false;
+glm::vec3 lightPos(-0.0f, 0.0f, 0.0f);
+glm::vec3 lightColor(1.0f);
 
 // variables
 bool isBPressed = false;
+bool isGamma = false;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
@@ -53,10 +54,10 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !isBPressed) {
-		isBlinn = !isBlinn;
+		isGamma = !isGamma;
 		isBPressed = true;
 
-		std::cout << "IsBlinn: " << isBlinn << std::endl;
+		std::cout << "IsGamma: " << isGamma << std::endl;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
@@ -89,7 +90,7 @@ float getValue() {
 	return (sin(time) / 2.0f) + 0.5f;
 }
 
-unsigned int loadTexture(char const* path) {
+unsigned int loadTexture(char const* path, bool gammaCorrection) {
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
@@ -97,15 +98,19 @@ unsigned int loadTexture(char const* path) {
 	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
 	if (data) {
 		GLenum format = GL_RGB;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
+		GLenum internalFormat = GL_SRGB;
+		if (nrComponents == 1) {
+			internalFormat = format = GL_RED;
+		} else if (nrComponents == 3) {
+			internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
 			format = GL_RGB;
-		else if (nrComponents == 4)
+		} else if (nrComponents == 4) {
+			internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
 			format = GL_RGBA;
+		}
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -236,10 +241,6 @@ int main() {
 
 	stbi_set_flip_vertically_on_load(true);
 
-	// Setup MSAA
-	// ==========
-	glfwWindowHint(GLFW_SAMPLES, 4);
-
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GGLFW window" << std::endl;
@@ -253,10 +254,6 @@ int main() {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-
-	// Setup MSAA
-	// ==========
-	glEnable(GL_MULTISAMPLE);
 
 	GLint vertexLimit;
 	GLint fragmentLimit;
@@ -350,54 +347,9 @@ int main() {
 
 	// load textures
 	// -------------
-	unsigned int cubeTexture = loadTexture("resources/imgs/marble.jpg");
-	unsigned int woodTexture = loadTexture("resources/imgs/wood.png");
-
-	// frame buffer(MSAA)
-	// ------------
-	unsigned int msaaFramebuffer;
-	glGenFramebuffers(1, &msaaFramebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, msaaFramebuffer);
-
-	unsigned int msaaTextureBuffer;
-	glGenTextures(1, &msaaTextureBuffer);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msaaTextureBuffer);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, SCR_WIDTH, SCR_HEIGHT, GL_TRUE);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msaaTextureBuffer, 0);
-
-	unsigned int rbo;
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// second post-processing framebuffer
-	// ==================================
-	unsigned int intermediateFBO;
-	glGenFramebuffers(1, &intermediateFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-
-	unsigned int screenTexture;
-	glGenTextures(1, &screenTexture);
-	glBindTexture(GL_TEXTURE_2D, screenTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	// we only need a color buffer
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << std::endl;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	unsigned int cubeTexture = loadTexture("resources/imgs/marble.jpg", true);
+	unsigned int gammaWoodTexture = loadTexture("resources/imgs/wood.png", false);
+	unsigned int linearWoodTexture = loadTexture("resources/imgs/wood.png", true);
 
 	// Setup UBO
 	// =========
@@ -435,7 +387,6 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		// 1. draw scene as normal in multisampled buffers
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msaaFramebuffer);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
@@ -466,27 +417,11 @@ int main() {
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		blinnPhongShader.setVec3("viewPos", camera.Position);
 		blinnPhongShader.setVec3("lightPos", lightPos);
-		blinnPhongShader.setInt("blinn", isBlinn);
+		blinnPhongShader.setVec3("lightColor", lightColor);
+		blinnPhongShader.setInt("isGamma", isGamma);
 		glBindVertexArray(planeVAO);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, woodTexture);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		// 2. blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFramebuffer);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
-		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-		// 3. render quad with scene's visuals as its texture image
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glDisable(GL_DEPTH_TEST);
-
-		// screen quad
-		quadShader.use();
-		glBindVertexArray(quadVAO);
-		glBindTexture(GL_TEXTURE_2D, screenTexture);
+		glBindTexture(GL_TEXTURE_2D, isGamma ? linearWoodTexture : gammaWoodTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// model
@@ -506,10 +441,10 @@ int main() {
 
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &quadVAO);
+	glDeleteVertexArrays(1, &planeVAO);
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &quadVBO);
-
-	glDeleteFramebuffers(1, &msaaFramebuffer);
+	glDeleteBuffers(1, &planeVBO);
 
 	// ===== terminate, clearing all previously allocated glfw resources =====
 	glfwTerminate();
