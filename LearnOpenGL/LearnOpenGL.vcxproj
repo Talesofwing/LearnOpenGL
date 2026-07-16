@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="src\shaders\blinn-phong.fs" />
     <None Include="src\shaders\explode.gs" />
     <None Include="src\shaders\instancing.fs" />
     <None Include="src\shaders\instancing.vs" />
@@ -149,6 +150,9 @@
     </None>
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
+    <None Include="src\shaders\blinn-phong.vs">
+      <FileType>Document</FileType>
+    </None>
     <ClCompile Include="src\stb_image_implementation.cpp" />
   </ItemGroup>
   <ItemGroup>

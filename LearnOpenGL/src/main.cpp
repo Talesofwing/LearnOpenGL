@@ -28,6 +28,13 @@ bool firstMouse = true;
 // Camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
+// Lighting
+glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
+bool isBlinn = false;
+
+// variables
+bool isBPressed = false;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
@@ -44,6 +51,17 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !isBPressed) {
+		isBlinn = !isBlinn;
+		isBPressed = true;
+
+		std::cout << "IsBlinn: " << isBlinn << std::endl;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
+		isBPressed = false;
+	}
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -183,6 +201,17 @@ float cubeVertices[] = {
 	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f
 };
 
+float planeVertices[] = {
+	// positions            // normals         // texcoords
+	 10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+	-10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+	-10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+
+	 10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+	-10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+	 10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
+};
+
 float quadVertices[] = {
 	// positions   // texcoords
 	-1.0f,  1.0f,  0.0f, 1.0f,
@@ -268,6 +297,7 @@ int main() {
 	// -------------------------
 	Shader shader("shader.vs", "shader.fs");
 	Shader quadShader("quadshader.vs", "quadshader.fs");
+	Shader blinnPhongShader("blinn-phong.vs", "blinn-phong.fs");
 
 	shader.use();
 	shader.setInt("texture1", 0);
@@ -303,10 +333,25 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 	glBindVertexArray(0);
+	// plane VAO
+	unsigned int planeVAO, planeVBO;
+	glGenVertexArrays(1, &planeVAO);
+	glGenBuffers(1, &planeVBO);
+	glBindVertexArray(planeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glBindVertexArray(0);
 
 	// load textures
 	// -------------
 	unsigned int cubeTexture = loadTexture("resources/imgs/marble.jpg");
+	unsigned int woodTexture = loadTexture("resources/imgs/wood.png");
 
 	// frame buffer(MSAA)
 	// ------------
@@ -340,6 +385,7 @@ int main() {
 	unsigned int intermediateFBO;
 	glGenFramebuffers(1, &intermediateFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+
 	unsigned int screenTexture;
 	glGenTextures(1, &screenTexture);
 	glBindTexture(GL_TEXTURE_2D, screenTexture);
@@ -400,16 +446,31 @@ int main() {
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		// cube
-		shader.use();
-		shader.setMat4("model", model);
+		//shader.use();
+		//glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+		//glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		//glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		//shader.setMat4("model", model);
+		//glBindVertexArray(cubeVAO);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, cubeTexture);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// floor
+		blinnPhongShader.use();
+		blinnPhongShader.setMat4("model", model);
 		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
 		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		glBindVertexArray(cubeVAO);
+		blinnPhongShader.setVec3("viewPos", camera.Position);
+		blinnPhongShader.setVec3("lightPos", lightPos);
+		blinnPhongShader.setInt("blinn", isBlinn);
+		glBindVertexArray(planeVAO);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, cubeTexture);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindTexture(GL_TEXTURE_2D, woodTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// 2. blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFramebuffer);
