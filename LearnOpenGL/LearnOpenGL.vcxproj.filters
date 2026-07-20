@@ -113,5 +113,7 @@
       <Filter>來源檔案</Filter>
     </None>
     <None Include="src\shaders\blinn-phong.fs" />
+    <None Include="src\shaders\depth.vs" />
+    <None Include="src\shaders\depth.fs" />
   </ItemGroup>
 </Project>

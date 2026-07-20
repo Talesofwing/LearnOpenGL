@@ -10,11 +10,13 @@ layout (std140) uniform Matrices
 	mat4 view;
 };
 uniform mat4 model;
+uniform mat4 lightClipSpaceMatrix;
 
 out VS_OUT {
 	vec3 WorldPos;
 	vec3 Normal;
 	vec2 TexCoords;
+	vec4 ClipPosLightSpace;
 } vs_out;
 
 void main()
@@ -22,6 +24,7 @@ void main()
 	vs_out.WorldPos = vec3(model * vec4(aPos, 1.0));
 	vs_out.Normal = aNormal * mat3(inverse(model));
 	vs_out.TexCoords = aTexCoords;
+	vs_out.ClipPosLightSpace = lightClipSpaceMatrix * vec4(vs_out.WorldPos, 1.0);
 
 	gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

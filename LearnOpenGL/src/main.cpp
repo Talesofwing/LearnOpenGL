@@ -29,12 +29,12 @@ bool firstMouse = true;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 // Lighting
-glm::vec3 lightPos(-0.0f, 0.0f, 0.0f);
-glm::vec3 lightColor(1.0f);
+glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+glm::vec3 lightColor(0.3f);
 
 // variables
 bool isBPressed = false;
-bool isGamma = false;
+bool gammaCorrectionEnabled = false;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
@@ -54,10 +54,10 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !isBPressed) {
-		isGamma = !isGamma;
+		gammaCorrectionEnabled = !gammaCorrectionEnabled;
 		isBPressed = true;
 
-		std::cout << "IsGamma: " << isGamma << std::endl;
+		std::cout << "Gamma Correction Enabled: " << (gammaCorrectionEnabled ? "True" : "False") << std::endl;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE) {
@@ -229,6 +229,8 @@ float quadVertices[] = {
 };
 
 int main() {
+	std::cout << "Gamma Correction Enabled: " << (gammaCorrectionEnabled ? "True" : "False") << std::endl;
+
 	// ===== glfw initialize and configure =====
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -295,12 +297,19 @@ int main() {
 	Shader shader("shader.vs", "shader.fs");
 	Shader quadShader("quadshader.vs", "quadshader.fs");
 	Shader blinnPhongShader("blinn-phong.vs", "blinn-phong.fs");
+	Shader depthShader("depth.vs", "depth.fs");
 
 	shader.use();
 	shader.setInt("texture1", 0);
 
 	quadShader.use();
 	quadShader.setInt("screenTexture", 0);
+
+	blinnPhongShader.use();
+	blinnPhongShader.setVec3("lightPos", lightPos);
+	blinnPhongShader.setVec3("lightColor", lightColor);
+	blinnPhongShader.setInt("diffuseTexture", 0);
+	blinnPhongShader.setInt("shadowMap", 1);
 
 	// build vertex array object
 	// =========================
@@ -347,21 +356,60 @@ int main() {
 
 	// load textures
 	// -------------
-	unsigned int cubeTexture = loadTexture("resources/imgs/marble.jpg", true);
-	unsigned int gammaWoodTexture = loadTexture("resources/imgs/wood.png", false);
-	unsigned int linearWoodTexture = loadTexture("resources/imgs/wood.png", true);
+	unsigned int cubeTexture = loadTexture("resources/imgs/wood.png", false);			// don't gamma correction
+	unsigned int srgbCubeTexture = loadTexture("resources/imgs/wood.png", true);
+	unsigned int woodTexture = loadTexture("resources/imgs/wood.png", false);
+	unsigned int srgbWoodTexture = loadTexture("resources/imgs/wood.png", true);
 
 	// Setup UBO
 	// =========
 	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "Matrices");
 	glUniformBlockBinding(shader.ID, uniformBlockIndex, 0);
+	uniformBlockIndex = glGetUniformBlockIndex(blinnPhongShader.ID, "Matrices");
+	glUniformBlockBinding(blinnPhongShader.ID, uniformBlockIndex, 0);
 
 	unsigned int uboMatrices;
 	glGenBuffers(1, &uboMatrices);
 	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
 	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+	//glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
+
+	// configure about shadow mapping
+	// ==============================
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+
+	const unsigned int DEPTH_MAP_WIDTH = 1024, DEPTH_MAP_HEIGHT = 1024;
+
+	unsigned int depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, DEPTH_MAP_WIDTH, DEPTH_MAP_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	float near_plane = 1.0f, far_plane = 7.5;
+	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+	depthShader.use();
+	depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+	blinnPhongShader.use();
+	blinnPhongShader.setMat4("lightClipSpaceMatrix", lightSpaceMatrix);
 
 	// Load model
 	// ==========
@@ -386,42 +434,96 @@ int main() {
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		// 1. draw scene as normal in multisampled buffers
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-
 		// set uniforms
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-		// cube
-		//shader.use();
-		//glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-		//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-		//glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-		//glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		//shader.setMat4("model", model);
-		//glBindVertexArray(cubeVAO);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, cubeTexture);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// floor
-		blinnPhongShader.use();
-		blinnPhongShader.setMat4("model", model);
 		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
 		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		// draw depth map
+		// ===============
+		depthShader.use();
+
+		glViewport(0, 0, DEPTH_MAP_WIDTH, DEPTH_MAP_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		// cube
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		depthShader.setMat4("model", model);
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		depthShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0f));
+		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		model = glm::scale(model, glm::vec3(0.25f));
+		depthShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// floor
+		model = glm::mat4(1.0f);
+		depthShader.setMat4("model", model);
+		glBindVertexArray(planeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		// ==========================================
+
+		// reset
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+		// Blinn-Phong Shading
+		blinnPhongShader.use();
 		blinnPhongShader.setVec3("viewPos", camera.Position);
-		blinnPhongShader.setVec3("lightPos", lightPos);
-		blinnPhongShader.setVec3("lightColor", lightColor);
-		blinnPhongShader.setInt("isGamma", isGamma);
+		blinnPhongShader.setInt("gammaCorrectionEnabled", gammaCorrectionEnabled);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		blinnPhongShader.setMat4("model", model);
+		glBindVertexArray(cubeVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbCubeTexture : cubeTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		blinnPhongShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0f));
+		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		model = glm::scale(model, glm::vec3(0.25f));
+		blinnPhongShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// floor
+		model = glm::mat4(1.0);
+		blinnPhongShader.setMat4("model", model);
 		glBindVertexArray(planeVAO);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, isGamma ? linearWoodTexture : gammaWoodTexture);
+		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbWoodTexture : woodTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// model
@@ -433,6 +535,19 @@ int main() {
 		//glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		//glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		//backpack.Draw(modelShader);
+
+		// render depth map to quad for visual debuggin
+		// ============================================
+		//glDisable(GL_DEPTH_TEST);
+		//quadShader.use();
+		//quadShader.setFloat("near_plane", near_plane);
+		//quadShader.setFloat("far_plane", far_plane);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, depthMap);
+		//glBindVertexArray(quadVAO);
+		//glDrawArrays(GL_TRIANGLES, 0, 6);
+		//glBindVertexArray(0);
+		//glEnable(GL_DEPTH_TEST);
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
 		glfwSwapBuffers(window);
