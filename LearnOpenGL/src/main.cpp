@@ -29,7 +29,7 @@ bool firstMouse = true;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 // Lighting
-glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 glm::vec3 lightColor(0.3f);
 
 // variables
@@ -155,55 +155,48 @@ unsigned int loadCubemap(std::vector<std::string> faces) {
 }
 
 float cubeVertices[] = {
-	// positions          // normals           // texcoords
-
 	// back face
-	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-
+	-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+	 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+	 1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+	 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+	-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+	-1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
 	// front face
-	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  0.0f, 0.0f,
-
+	-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+	 1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
+	 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+	 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+	-1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
+	-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
 	// left face
-	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-
+	-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+	-1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+	-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+	-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+	-1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+	-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
 	// right face
-	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
+	 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+	 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+	 1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
+	 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+	 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+	 1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
 	// bottom face
-	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
+	-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+	 1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+	 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+	 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+	-1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+	-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
 	// top face
-	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f
+	-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+	 1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+	 1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+	 1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+	-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+	-1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left
 };
 
 float planeVertices[] = {
@@ -292,25 +285,6 @@ int main() {
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
-	// build and compile shaders
-	// -------------------------
-	Shader shader("shader.vs", "shader.fs");
-	Shader quadShader("quadshader.vs", "quadshader.fs");
-	Shader blinnPhongShader("blinn-phong.vs", "blinn-phong.fs");
-	Shader depthShader("depth.vs", "depth.fs");
-
-	shader.use();
-	shader.setInt("texture1", 0);
-
-	quadShader.use();
-	quadShader.setInt("screenTexture", 0);
-
-	blinnPhongShader.use();
-	blinnPhongShader.setVec3("lightPos", lightPos);
-	blinnPhongShader.setVec3("lightColor", lightColor);
-	blinnPhongShader.setInt("diffuseTexture", 0);
-	blinnPhongShader.setInt("shadowMap", 1);
-
 	// build vertex array object
 	// =========================
 	// cube VAO
@@ -361,6 +335,78 @@ int main() {
 	unsigned int woodTexture = loadTexture("resources/imgs/wood.png", false);
 	unsigned int srgbWoodTexture = loadTexture("resources/imgs/wood.png", true);
 
+	// configure about shadow mapping
+	// ==============================
+	const unsigned int DEPTH_MAP_WIDTH = 1024, DEPTH_MAP_HEIGHT = 1024;
+
+	unsigned int depthFBO;
+	glGenFramebuffers(1, &depthFBO);
+
+	unsigned int depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthMap);
+	for (unsigned int i = 0; i < 6; ++i) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, DEPTH_MAP_WIDTH, DEPTH_MAP_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	float near_plane = 1.0f; float far_plane = 25.0f;
+	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), DEPTH_MAP_WIDTH / (float)DEPTH_MAP_HEIGHT, near_plane, far_plane);
+	std::vector<glm::mat4> shadowTransforms;
+	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+
+	// Load model
+	// ==========
+	//Model backpack("backpack/backpack.obj");
+
+	// Wireframe draw
+	// ==============
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	// build and compile shaders
+	// -------------------------
+	Shader shader("shader.vs", "shader.fs");
+	Shader quadShader("quadshader.vs", "quadshader.fs");
+	Shader blinnPhongShader("blinn-phong.vs", "blinn-phong.fs");
+	Shader depthShader("depth.vs", "depth.fs");
+	Shader cubemapDepthShader("cubemapDepth.vs", "cubemapDepth.fs", "cubemapDepth.gs");
+
+	shader.use();
+	shader.setInt("texture1", 0);
+
+	quadShader.use();
+	quadShader.setInt("screenTexture", 0);
+
+	blinnPhongShader.use();
+	blinnPhongShader.setVec3("lightPos", lightPos);
+	blinnPhongShader.setVec3("lightColor", lightColor);
+	blinnPhongShader.setInt("diffuseTexture", 0);
+	blinnPhongShader.setInt("shadowCubemap", 1);
+	blinnPhongShader.setFloat("far_plane", far_plane);
+
+	cubemapDepthShader.use();
+	cubemapDepthShader.setVec3("lightPos", lightPos);
+	cubemapDepthShader.setFloat("far_plane", far_plane);
+	for (int i = 0; i < 6; ++i) {
+		cubemapDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+	}
+
 	// Setup UBO
 	// =========
 	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "Matrices");
@@ -375,49 +421,6 @@ int main() {
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	//glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
-
-	// configure about shadow mapping
-	// ==============================
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
-
-	const unsigned int DEPTH_MAP_WIDTH = 1024, DEPTH_MAP_HEIGHT = 1024;
-
-	unsigned int depthMap;
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, DEPTH_MAP_WIDTH, DEPTH_MAP_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	float near_plane = 1.0f, far_plane = 7.5;
-	glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-	depthShader.use();
-	depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-	blinnPhongShader.use();
-	blinnPhongShader.setMat4("lightClipSpaceMatrix", lightSpaceMatrix);
-
-	// Load model
-	// ==========
-	//Model backpack("backpack/backpack.obj");
-
-	// Wireframe draw
-	// ==============
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// render loop
 	// -----------
@@ -444,45 +447,63 @@ int main() {
 		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		// draw depth map
-		// ===============
-		depthShader.use();
+		glBindVertexArray(cubeVAO);
+
+		// draw cubemap depth map
+		// ======================
+		cubemapDepthShader.use();
 
 		glViewport(0, 0, DEPTH_MAP_WIDTH, DEPTH_MAP_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
 
+		// room cube
+		model = glm::mat4(1.0);
+		model = glm::scale(model, glm::vec3(5.0f));
+		glDisable(GL_CULL_FACE);
+		cubemapDepthShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glEnable(GL_CULL_FACE);
+
 		// cube
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(4.0f, -3.5f, 0.0));
 		model = glm::scale(model, glm::vec3(0.5f));
-		depthShader.setMat4("model", model);
-		glBindVertexArray(cubeVAO);
+		cubemapDepthShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// cube
 		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.5f));
-		depthShader.setMat4("model", model);
+		model = glm::translate(model, glm::vec3(2.0f, 3.0f, 1.0));
+		model = glm::scale(model, glm::vec3(0.75f));
+		cubemapDepthShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// cube
 		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0f));
+		model = glm::translate(model, glm::vec3(-3.0f, -1.0f, 0.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		cubemapDepthShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-1.5f, 1.0f, 1.5));
+		model = glm::scale(model, glm::vec3(0.5f));
+		cubemapDepthShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-1.5f, 2.0f, -3.0));
 		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		model = glm::scale(model, glm::vec3(0.25f));
-		depthShader.setMat4("model", model);
+		model = glm::scale(model, glm::vec3(0.75f));
+		cubemapDepthShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// floor
-		model = glm::mat4(1.0f);
-		depthShader.setMat4("model", model);
-		glBindVertexArray(planeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
 		// ==========================================
 
-		// reset
+		// draw
+		// ====
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
@@ -490,17 +511,63 @@ int main() {
 		blinnPhongShader.use();
 		blinnPhongShader.setVec3("viewPos", camera.Position);
 		blinnPhongShader.setInt("gammaCorrectionEnabled", gammaCorrectionEnabled);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbCubeTexture : cubeTexture);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthMap);
+
+		// room cube
+		model = glm::mat4(1.0);
+		model = glm::scale(model, glm::vec3(5.0f));
+		blinnPhongShader.setMat4("model", model);
+		glDisable(GL_CULL_FACE);
+		blinnPhongShader.setInt("reverse_normals", 1);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		blinnPhongShader.setInt("reverse_normals", 0);
+		glEnable(GL_CULL_FACE);
+
+		// cube
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(4.0f, -3.5f, 0.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		blinnPhongShader.setMat4("model", model);
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(2.0f, 3.0f, 1.0));
+		model = glm::scale(model, glm::vec3(0.75f));
+		blinnPhongShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-3.0f, -1.0f, 0.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		blinnPhongShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-1.5f, 1.0f, 1.5));
+		model = glm::scale(model, glm::vec3(0.5f));
+		blinnPhongShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// cube
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-1.5f, 2.0f, -3.0));
+		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		model = glm::scale(model, glm::vec3(0.75f));
+		blinnPhongShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// cube
 		model = glm::mat4(1.0);
 		model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.5f));
 		blinnPhongShader.setMat4("model", model);
-		glBindVertexArray(cubeVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbCubeTexture : cubeTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// cube
@@ -517,37 +584,7 @@ int main() {
 		model = glm::scale(model, glm::vec3(0.25f));
 		blinnPhongShader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// floor
-		model = glm::mat4(1.0);
-		blinnPhongShader.setMat4("model", model);
-		glBindVertexArray(planeVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbWoodTexture : woodTexture);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		// model
-		//modelShader.use();
-		//modelShader.setFloat("time", glfwGetTime());
-		//modelShader.setMat4("model", model);
-		//glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-		//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-		//glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-		//glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		//backpack.Draw(modelShader);
-
-		// render depth map to quad for visual debuggin
-		// ============================================
-		//glDisable(GL_DEPTH_TEST);
-		//quadShader.use();
-		//quadShader.setFloat("near_plane", near_plane);
-		//quadShader.setFloat("far_plane", far_plane);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, depthMap);
-		//glBindVertexArray(quadVAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 6);
-		//glBindVertexArray(0);
-		//glEnable(GL_DEPTH_TEST);
+		// ==========================================
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
 		glfwSwapBuffers(window);
