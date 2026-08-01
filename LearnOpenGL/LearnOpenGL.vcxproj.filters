@@ -118,5 +118,7 @@
     <None Include="src\shaders\cubemapDepth.vs" />
     <None Include="src\shaders\cubemapDepth.fs" />
     <None Include="src\shaders\cubemapDepth.gs" />
+    <None Include="src\shaders\normalmapping.vs" />
+    <None Include="src\shaders\normalmapping.fs" />
   </ItemGroup>
 </Project>

@@ -4,7 +4,7 @@
 
 #include <vector>
 
-#include <assimp//Importer.hpp>
+#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
@@ -24,12 +24,16 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
     unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
     if (data) {
         GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
+        switch (nrComponents) {
+            case 1: format = GL_RED;  break;
+            case 2: format = GL_RG;   break;
+            case 3: format = GL_RGB;  break;
+            case 4: format = GL_RGBA; break;
+            default:
+                stbi_image_free(data);
+                glDeleteTextures(1, &textureID);
+                return 0;
+        }
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
@@ -110,7 +114,7 @@ private:
 
         // walk through each of the mesh's vertices
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-            Vertex vertex;
+            Vertex vertex {};
             glm::vec3 vector; // we declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
             // positions
             vector.x = mesh->mVertices[i].x;
@@ -124,6 +128,17 @@ private:
                 vector.z = mesh->mNormals[i].z;
                 vertex.Normal = vector;
             }
+            // tangents & bitangent
+            if (mesh->HasTangentsAndBitangents()) {
+                vector.x = mesh->mTangents[i].x;
+                vector.y = mesh->mTangents[i].y;
+                vector.z = mesh->mTangents[i].z;
+                vertex.Tangent = vector;
+                vector.x = mesh->mBitangents[i].x;
+                vector.y = mesh->mBitangents[i].y;
+                vector.z = mesh->mBitangents[i].z;
+                vertex.Bitangent = vector;
+            }
             // texture coordinates
             if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
             {
@@ -133,16 +148,6 @@ private:
                 vec.x = mesh->mTextureCoords[0][i].x;
                 vec.y = mesh->mTextureCoords[0][i].y;
                 vertex.TexCoords = vec;
-                // tangent
-                vector.x = mesh->mTangents[i].x;
-                vector.y = mesh->mTangents[i].y;
-                vector.z = mesh->mTangents[i].z;
-                vertex.Tangent = vector;
-                // bitangent
-                vector.x = mesh->mBitangents[i].x;
-                vector.y = mesh->mBitangents[i].y;
-                vector.z = mesh->mBitangents[i].z;
-                vertex.Bitangent = vector;
             } else {
                 vertex.TexCoords = glm::vec2(0.0f, 0.0f);
             }

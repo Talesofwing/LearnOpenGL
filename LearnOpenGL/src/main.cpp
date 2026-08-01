@@ -26,10 +26,10 @@ float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 3.0f, 3.0f));
 
 // Lighting
-glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
+glm::vec3 lightPos(3.0f, 0.5f, 1.0f);
 glm::vec3 lightColor(0.3f);
 
 // variables
@@ -210,16 +210,71 @@ float planeVertices[] = {
 	 10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
 };
 
-float quadVertices[] = {
-	// positions   // texcoords
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	-1.0f, -1.0f,  0.0f, 0.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
+float quadVertices[84];
 
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
-	 1.0f,  1.0f,  1.0f, 1.0f
-};
+void calculateQuadTBN() {
+	glm::vec3 p1(-1.0f,  1.0f, 0.0f);
+	glm::vec3 p2( 1.0f,  1.0f, 0.0f);
+	glm::vec3 p3( 1.0f, -1.0f, 0.0f);
+	glm::vec3 p4(-1.0f, -1.0f, 0.0f);
+
+	glm::vec2 uv1(0.0f, 1.0f);
+	glm::vec2 uv2(1.0f, 1.0f);
+	glm::vec2 uv3(1.0f, 0.0f);
+	glm::vec2 uv4(0.0f, 0.0f);
+
+	glm::vec3 n(0.0f, 0.0f, 1.0f);
+
+	glm::vec3 t1, b1;
+	glm::vec3 t2, b2;
+
+	// triangle 1
+	// ==========
+	glm::vec3 edge1 = p2 - p1;
+	glm::vec3 edge2 = p3 - p1;
+	glm::vec2 deltaUV1 = uv2 - uv1;
+	glm::vec2 deltaUV2 = uv3 - uv1;
+
+	float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+	t1.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+	t1.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+	t1.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+	b1.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+	b1.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+	b1.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+	// triangle 2
+	// ==========
+	edge1 = p3 - p1;
+	edge2 = p4 - p1;
+	deltaUV1 = uv3 - uv1;
+	deltaUV2 = uv4 - uv1;
+
+	f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+	t2.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+	t2.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+	t2.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+	b2.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+	b2.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+	b2.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+	const float vertexData[] = {
+		// position         // normal        // texcoord     // tangent        // bitangent
+		p1.x, p1.y, p1.z,   n.x, n.y, n.z,   uv1.x, uv1.y,   t1.x, t1.y, t1.z, b1.x, b1.y, b1.z,
+		p3.x, p3.y, p3.z,   n.x, n.y, n.z,   uv3.x, uv3.y,   t1.x, t1.y, t1.z, b1.x, b1.y, b1.z,
+		p2.x, p2.y, p2.z,   n.x, n.y, n.z,   uv2.x, uv2.y,   t1.x, t1.y, t1.z, b1.x, b1.y, b1.z,
+
+		p1.x, p1.y, p1.z,   n.x, n.y, n.z,   uv1.x, uv1.y,   t2.x, t2.y, t2.z, b2.x, b2.y, b2.z,
+		p4.x, p4.y, p4.z,   n.x, n.y, n.z,   uv4.x, uv4.y,   t2.x, t2.y, t2.z, b2.x, b2.y, b2.z,
+		p3.x, p3.y, p3.z,   n.x, n.y, n.z,   uv3.x, uv3.y,   t2.x, t2.y, t2.z, b2.x, b2.y, b2.z
+	};
+
+	std::copy(std::begin(vertexData), std::end(vertexData), quadVertices);
+}
 
 int main() {
 	std::cout << "Gamma Correction Enabled: " << (gammaCorrectionEnabled ? "True" : "False") << std::endl;
@@ -234,7 +289,7 @@ int main() {
 	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(false);
 
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 	if (window == NULL) {
@@ -293,7 +348,7 @@ int main() {
 	glGenBuffers(1, &cubeVBO);
 	glBindVertexArray(cubeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
@@ -302,16 +357,23 @@ int main() {
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glBindVertexArray(0);
 	// quad VAO
+	calculateQuadTBN();
 	unsigned int quadVAO, quadVBO;
 	glGenVertexArrays(1, &quadVAO);
 	glGenBuffers(1, &quadVBO);
 	glBindVertexArray(quadVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);  // pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);  // normal
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);  // texcoord
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(3);  // tangent
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(8 * sizeof(float)));
+	glEnableVertexAttribArray(4);  // bitangent
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(11 * sizeof(float)));
 	glBindVertexArray(0);
 	// plane VAO
 	unsigned int planeVAO, planeVBO;
@@ -334,6 +396,9 @@ int main() {
 	unsigned int srgbCubeTexture = loadTexture("resources/imgs/wood.png", true);
 	unsigned int woodTexture = loadTexture("resources/imgs/wood.png", false);
 	unsigned int srgbWoodTexture = loadTexture("resources/imgs/wood.png", true);
+	unsigned int brickTexture = loadTexture("resources/imgs/brickwall.jpg", false);
+	unsigned int srgbBrickTexture = loadTexture("resources/imgs/brickwall.jpg", true);
+	unsigned int brickNormalMap = loadTexture("resources/imgs/brickwall_normal.jpg", false);
 
 	// configure about shadow mapping
 	// ==============================
@@ -374,6 +439,7 @@ int main() {
 	// Load model
 	// ==========
 	//Model backpack("backpack/backpack.obj");
+	Model cyborg("cyborg/cyborg.obj");
 
 	// Wireframe draw
 	// ==============
@@ -386,6 +452,8 @@ int main() {
 	Shader blinnPhongShader("blinn-phong.vs", "blinn-phong.fs");
 	Shader depthShader("depth.vs", "depth.fs");
 	Shader cubemapDepthShader("cubemapDepth.vs", "cubemapDepth.fs", "cubemapDepth.gs");
+	Shader modelShader("model.vs", "model.fs");
+	Shader normalmappingShader("normalmapping.vs", "normalmapping.fs");
 
 	shader.use();
 	shader.setInt("texture1", 0);
@@ -407,12 +475,27 @@ int main() {
 		cubemapDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
 	}
 
+	modelShader.use();
+	modelShader.setInt("texture_diffuse1", 0);
+	modelShader.setInt("texture_specular1", 1);
+	modelShader.setInt("texture_normal1", 2);
+	modelShader.setVec3("lightPos", lightPos);
+
+	normalmappingShader.use();
+	normalmappingShader.setInt("diffuseMap", 0);
+	normalmappingShader.setInt("normalMap", 1);
+	normalmappingShader.setVec3("lightPos", lightPos);
+
 	// Setup UBO
 	// =========
 	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "Matrices");
 	glUniformBlockBinding(shader.ID, uniformBlockIndex, 0);
 	uniformBlockIndex = glGetUniformBlockIndex(blinnPhongShader.ID, "Matrices");
 	glUniformBlockBinding(blinnPhongShader.ID, uniformBlockIndex, 0);
+	uniformBlockIndex = glGetUniformBlockIndex(modelShader.ID, "Matrices");
+	glUniformBlockBinding(modelShader.ID, uniformBlockIndex, 0);
+	uniformBlockIndex = glGetUniformBlockIndex(normalmappingShader.ID, "Matrices");
+	glUniformBlockBinding(normalmappingShader.ID, uniformBlockIndex, 0);
 
 	unsigned int uboMatrices;
 	glGenBuffers(1, &uboMatrices);
@@ -447,8 +530,6 @@ int main() {
 		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		glBindVertexArray(cubeVAO);
-
 		// draw cubemap depth map
 		// ======================
 		cubemapDepthShader.use();
@@ -457,133 +538,33 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		// room cube
-		model = glm::mat4(1.0);
-		model = glm::scale(model, glm::vec3(5.0f));
-		glDisable(GL_CULL_FACE);
-		cubemapDepthShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glEnable(GL_CULL_FACE);
-
-		// cube
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(4.0f, -3.5f, 0.0));
-		model = glm::scale(model, glm::vec3(0.5f));
-		cubemapDepthShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(2.0f, 3.0f, 1.0));
-		model = glm::scale(model, glm::vec3(0.75f));
-		cubemapDepthShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-3.0f, -1.0f, 0.0));
-		model = glm::scale(model, glm::vec3(0.5f));
-		cubemapDepthShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-1.5f, 1.0f, 1.5));
-		model = glm::scale(model, glm::vec3(0.5f));
-		cubemapDepthShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-1.5f, 2.0f, -3.0));
-		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		model = glm::scale(model, glm::vec3(0.75f));
-		cubemapDepthShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		// ==========================================
-
 		// draw
 		// ====
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-		// Blinn-Phong Shading
-		blinnPhongShader.use();
-		blinnPhongShader.setVec3("viewPos", camera.Position);
-		blinnPhongShader.setInt("gammaCorrectionEnabled", gammaCorrectionEnabled);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbCubeTexture : cubeTexture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depthMap);
-
-		// room cube
+		// quad
+		//model = glm::mat4(1.0);
+		//model = glm::rotate(model, glm::radians((float)glfwGetTime() * -10.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		//normalmappingShader.use();
+		//normalmappingShader.setMat4("model", model);
+		//normalmappingShader.setVec3("viewPos", camera.Position);
+		//normalmappingShader.setVec3("lightPos", lightPos);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbBrickTexture : brickTexture);
+		//glActiveTexture(GL_TEXTURE1);
+		//glBindTexture(GL_TEXTURE_2D, brickNormalMap);
+		//glBindVertexArray(quadVAO);
+		//glDrawArrays(GL_TRIANGLES, 0, 6);
+		 
+		// cyborg
 		model = glm::mat4(1.0);
-		model = glm::scale(model, glm::vec3(5.0f));
-		blinnPhongShader.setMat4("model", model);
-		glDisable(GL_CULL_FACE);
-		blinnPhongShader.setInt("reverse_normals", 1);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		blinnPhongShader.setInt("reverse_normals", 0);
-		glEnable(GL_CULL_FACE);
-
-		// cube
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(4.0f, -3.5f, 0.0));
-		model = glm::scale(model, glm::vec3(0.5f));
-		blinnPhongShader.setMat4("model", model);
-		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(2.0f, 3.0f, 1.0));
-		model = glm::scale(model, glm::vec3(0.75f));
-		blinnPhongShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-3.0f, -1.0f, 0.0));
-		model = glm::scale(model, glm::vec3(0.5f));
-		blinnPhongShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-1.5f, 1.0f, 1.5));
-		model = glm::scale(model, glm::vec3(0.5f));
-		blinnPhongShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-1.5f, 2.0f, -3.0));
-		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		model = glm::scale(model, glm::vec3(0.75f));
-		blinnPhongShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(0.0f, 3.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f));
-		blinnPhongShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.5f));
-		blinnPhongShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// cube
-		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0f));
-		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		model = glm::scale(model, glm::vec3(0.25f));
-		blinnPhongShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		modelShader.use();
+		modelShader.setMat4("model", model);
+		modelShader.setVec3("viewPos", camera.Position);
+		modelShader.setVec3("lightPos", lightPos);
+		modelShader.setInt("gammaCorrectionEnabled", gammaCorrectionEnabled);
+		cyborg.Draw(modelShader);
 		// ==========================================
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
