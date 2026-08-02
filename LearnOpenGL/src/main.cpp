@@ -438,8 +438,8 @@ int main() {
 
 	// Load model
 	// ==========
-	//Model backpack("backpack/backpack.obj");
-	Model cyborg("cyborg/cyborg.obj");
+	//Model backpack("backpack/backpack.obj", gammaCorrectionEnabled);
+	Model cyborg("cyborg/cyborg.obj", gammaCorrectionEnabled);
 
 	// Wireframe draw
 	// ==============
@@ -563,7 +563,7 @@ int main() {
 		modelShader.setMat4("model", model);
 		modelShader.setVec3("viewPos", camera.Position);
 		modelShader.setVec3("lightPos", lightPos);
-		modelShader.setInt("gammaCorrectionEnabled", gammaCorrectionEnabled);
+		modelShader.setBool("gammaCorrectionEnabled", gammaCorrectionEnabled);
 		cyborg.Draw(modelShader);
 		// ==========================================
 

@@ -33,8 +33,8 @@ vec3 BlinnPhong()
     float attenuation = 1.0 / (gammaCorrectionEnabled ? distanceToLight * distanceToLight : distanceToLight);
 
     vec3 ambient = 0.3 * diffuseColor;
-    vec3 diffuse = 5.0 * diff * diffuseColor;
-    vec3 specular = 0.2 * spec * specularColor;
+    vec3 diffuse = diff * diffuseColor;
+    vec3 specular = spec * specularColor;
     return ambient + attenuation * (diffuse + specular);
 }
 
