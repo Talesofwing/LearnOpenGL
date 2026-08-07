@@ -120,5 +120,7 @@
     <None Include="src\shaders\cubemapDepth.gs" />
     <None Include="src\shaders\normalmapping.vs" />
     <None Include="src\shaders\normalmapping.fs" />
+    <None Include="src\shaders\parallaxmapping.vs" />
+    <None Include="src\shaders\parallaxmapping.fs" />
   </ItemGroup>
 </Project>

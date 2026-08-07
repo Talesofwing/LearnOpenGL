@@ -26,7 +26,7 @@ float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 3.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 // Lighting
 glm::vec3 lightPos(3.0f, 0.5f, 1.0f);
@@ -400,6 +400,11 @@ int main() {
 	unsigned int srgbBrickTexture = loadTexture("resources/imgs/brickwall.jpg", true);
 	unsigned int brickNormalMap = loadTexture("resources/imgs/brickwall_normal.jpg", false);
 
+	unsigned int brick2Texture = loadTexture("resources/imgs/bricks2.jpg", false);
+	unsigned int srgbBrick2Texture = loadTexture("resources/imgs/bricks2.jpg", true);
+	unsigned int brick2NormalMap = loadTexture("resources/imgs/bricks2_normal.jpg", false);
+	unsigned int brick2DisplacementMap = loadTexture("resources/imgs/bricks2_disp.jpg", false);
+
 	// configure about shadow mapping
 	// ==============================
 	const unsigned int DEPTH_MAP_WIDTH = 1024, DEPTH_MAP_HEIGHT = 1024;
@@ -454,6 +459,7 @@ int main() {
 	Shader cubemapDepthShader("cubemapDepth.vs", "cubemapDepth.fs", "cubemapDepth.gs");
 	Shader modelShader("model.vs", "model.fs");
 	Shader normalmappingShader("normalmapping.vs", "normalmapping.fs");
+	Shader parallaxmappingShader("parallaxmapping.vs", "parallaxmapping.fs");
 
 	shader.use();
 	shader.setInt("texture1", 0);
@@ -486,6 +492,13 @@ int main() {
 	normalmappingShader.setInt("normalMap", 1);
 	normalmappingShader.setVec3("lightPos", lightPos);
 
+	parallaxmappingShader.use();
+	parallaxmappingShader.setInt("diffuseMap", 0);
+	parallaxmappingShader.setInt("normalMap", 1);
+	parallaxmappingShader.setInt("depthMap", 2);
+	parallaxmappingShader.setFloat("height_scale", 0.1f);
+	parallaxmappingShader.setVec3("lightPos", lightPos);
+
 	// Setup UBO
 	// =========
 	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "Matrices");
@@ -496,6 +509,8 @@ int main() {
 	glUniformBlockBinding(modelShader.ID, uniformBlockIndex, 0);
 	uniformBlockIndex = glGetUniformBlockIndex(normalmappingShader.ID, "Matrices");
 	glUniformBlockBinding(normalmappingShader.ID, uniformBlockIndex, 0);
+	uniformBlockIndex = glGetUniformBlockIndex(parallaxmappingShader.ID, "Matrices");
+	glUniformBlockBinding(parallaxmappingShader.ID, uniformBlockIndex, 0);
 
 	unsigned int uboMatrices;
 	glGenBuffers(1, &uboMatrices);
@@ -530,41 +545,25 @@ int main() {
 		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		// draw cubemap depth map
-		// ======================
-		cubemapDepthShader.use();
-
-		glViewport(0, 0, DEPTH_MAP_WIDTH, DEPTH_MAP_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-
 		// draw
 		// ====
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 		// quad
-		//model = glm::mat4(1.0);
-		//model = glm::rotate(model, glm::radians((float)glfwGetTime() * -10.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		//normalmappingShader.use();
-		//normalmappingShader.setMat4("model", model);
-		//normalmappingShader.setVec3("viewPos", camera.Position);
-		//normalmappingShader.setVec3("lightPos", lightPos);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbBrickTexture : brickTexture);
-		//glActiveTexture(GL_TEXTURE1);
-		//glBindTexture(GL_TEXTURE_2D, brickNormalMap);
-		//glBindVertexArray(quadVAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 6);
-		 
-		// cyborg
+		parallaxmappingShader.use();
+		parallaxmappingShader.setMat4("model", model);
+		parallaxmappingShader.setVec3("viewPos", camera.Position);
+
 		model = glm::mat4(1.0);
-		modelShader.use();
-		modelShader.setMat4("model", model);
-		modelShader.setVec3("viewPos", camera.Position);
-		modelShader.setVec3("lightPos", lightPos);
-		modelShader.setBool("gammaCorrectionEnabled", gammaCorrectionEnabled);
-		cyborg.Draw(modelShader);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbBrick2Texture : brick2Texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, brick2NormalMap);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, brick2DisplacementMap);
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 		// ==========================================
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
