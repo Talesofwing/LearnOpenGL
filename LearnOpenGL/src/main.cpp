@@ -26,7 +26,7 @@ float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 
 // Lighting
 glm::vec3 lightPos(3.0f, 0.5f, 1.0f);
@@ -327,8 +327,8 @@ int main() {
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -339,6 +339,21 @@ int main() {
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
+
+	// lighting info
+	// -------------
+	// positions
+	std::vector<glm::vec3> lightPositions;
+	lightPositions.push_back(glm::vec3(0.0f, 0.0f, 49.5f)); // back light
+	lightPositions.push_back(glm::vec3(-1.4f, -1.9f, 9.0f));
+	lightPositions.push_back(glm::vec3(0.0f, -1.8f, 4.0f));
+	lightPositions.push_back(glm::vec3(0.8f, -1.7f, 6.0f));
+	// colors
+	std::vector<glm::vec3> lightColors;
+	lightColors.push_back(glm::vec3(200.0f, 200.0f, 200.0f));
+	lightColors.push_back(glm::vec3(0.1f, 0.0f, 0.0f));
+	lightColors.push_back(glm::vec3(0.0f, 0.0f, 0.2f));
+	lightColors.push_back(glm::vec3(0.0f, 0.1f, 0.0f));
 
 	// build vertex array object
 	// =========================
@@ -441,6 +456,27 @@ int main() {
 	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
 	shadowTransforms.push_back(shadowProj* glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
 
+	// configure floating point framebuffer
+	unsigned int hdrFBO;
+	glGenFramebuffers(1, &hdrFBO);
+	unsigned int colorBuffer;
+	glGenTextures(1, &colorBuffer);
+	glBindTexture(GL_TEXTURE_2D, colorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	unsigned int rboDepth;
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	// Load model
 	// ==========
 	//Model backpack("backpack/backpack.obj", gammaCorrectionEnabled);
@@ -452,34 +488,9 @@ int main() {
 
 	// build and compile shaders
 	// -------------------------
-	Shader shader("shader.vs", "shader.fs");
-	Shader quadShader("quadshader.vs", "quadshader.fs");
-	Shader blinnPhongShader("blinn-phong.vs", "blinn-phong.fs");
-	Shader depthShader("depth.vs", "depth.fs");
-	Shader cubemapDepthShader("cubemapDepth.vs", "cubemapDepth.fs", "cubemapDepth.gs");
+	Shader lightingShader("lighting.vs", "lighting.fs");
 	Shader modelShader("model.vs", "model.fs");
-	Shader normalmappingShader("normalmapping.vs", "normalmapping.fs");
-	Shader parallaxmappingShader("parallaxmapping.vs", "parallaxmapping.fs");
-
-	shader.use();
-	shader.setInt("texture1", 0);
-
-	quadShader.use();
-	quadShader.setInt("screenTexture", 0);
-
-	blinnPhongShader.use();
-	blinnPhongShader.setVec3("lightPos", lightPos);
-	blinnPhongShader.setVec3("lightColor", lightColor);
-	blinnPhongShader.setInt("diffuseTexture", 0);
-	blinnPhongShader.setInt("shadowCubemap", 1);
-	blinnPhongShader.setFloat("far_plane", far_plane);
-
-	cubemapDepthShader.use();
-	cubemapDepthShader.setVec3("lightPos", lightPos);
-	cubemapDepthShader.setFloat("far_plane", far_plane);
-	for (int i = 0; i < 6; ++i) {
-		cubemapDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-	}
+	Shader hdrShader("hdr.vs", "hdr.fs");
 
 	modelShader.use();
 	modelShader.setInt("texture_diffuse1", 0);
@@ -487,30 +498,18 @@ int main() {
 	modelShader.setInt("texture_normal1", 2);
 	modelShader.setVec3("lightPos", lightPos);
 
-	normalmappingShader.use();
-	normalmappingShader.setInt("diffuseMap", 0);
-	normalmappingShader.setInt("normalMap", 1);
-	normalmappingShader.setVec3("lightPos", lightPos);
+	hdrShader.use();
+	hdrShader.setFloat("exposure", 1.0f);
+	hdrShader.setInt("hdrBuffer", 0);
 
-	parallaxmappingShader.use();
-	parallaxmappingShader.setInt("diffuseMap", 0);
-	parallaxmappingShader.setInt("normalMap", 1);
-	parallaxmappingShader.setInt("depthMap", 2);
-	parallaxmappingShader.setFloat("height_scale", 0.1f);
-	parallaxmappingShader.setVec3("lightPos", lightPos);
+	lightingShader.setInt("diffuseTexture", 0);
 
 	// Setup UBO
 	// =========
-	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "Matrices");
-	glUniformBlockBinding(shader.ID, uniformBlockIndex, 0);
-	uniformBlockIndex = glGetUniformBlockIndex(blinnPhongShader.ID, "Matrices");
-	glUniformBlockBinding(blinnPhongShader.ID, uniformBlockIndex, 0);
+	unsigned int uniformBlockIndex = glGetUniformBlockIndex(lightingShader.ID, "Matrices");
+	glUniformBlockBinding(lightingShader.ID, uniformBlockIndex, 0);
 	uniformBlockIndex = glGetUniformBlockIndex(modelShader.ID, "Matrices");
 	glUniformBlockBinding(modelShader.ID, uniformBlockIndex, 0);
-	uniformBlockIndex = glGetUniformBlockIndex(normalmappingShader.ID, "Matrices");
-	glUniformBlockBinding(normalmappingShader.ID, uniformBlockIndex, 0);
-	uniformBlockIndex = glGetUniformBlockIndex(parallaxmappingShader.ID, "Matrices");
-	glUniformBlockBinding(parallaxmappingShader.ID, uniformBlockIndex, 0);
 
 	unsigned int uboMatrices;
 	glGenBuffers(1, &uboMatrices);
@@ -550,20 +549,37 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-		// quad
-		parallaxmappingShader.use();
-		parallaxmappingShader.setMat4("model", model);
-		parallaxmappingShader.setVec3("viewPos", camera.Position);
+		// scene
+		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			lightingShader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbWoodTexture : woodTexture);
+			for (unsigned int i = 0; i < lightPositions.size(); i++) {
+				lightingShader.setVec3("lights[" + std::to_string(i) + "].Position", lightPositions[i]);
+				lightingShader.setVec3("lights[" + std::to_string(i) + "].Color", lightColors[i]);
+			}
+			lightingShader.setVec3("viewPos", camera.Position);
+			// render tunnel
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 25.0f));
+			model = glm::scale(model, glm::vec3(2.5f, 2.5f, 27.5f));
+			lightingShader.setMat4("model", model);
+			lightingShader.setInt("reverse_normals", true);
+			glBindVertexArray(cubeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		model = glm::mat4(1.0);
+		// quad
+		glDisable(GL_DEPTH_TEST);
+		hdrShader.use();
+		hdrShader.setBool("gammaCorrectionEnabled", gammaCorrectionEnabled);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, gammaCorrectionEnabled ? srgbBrick2Texture : brick2Texture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, brick2NormalMap);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, brick2DisplacementMap);
+		glBindTexture(GL_TEXTURE_2D, colorBuffer);
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glEnable(GL_DEPTH_TEST);
 		// ==========================================
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)

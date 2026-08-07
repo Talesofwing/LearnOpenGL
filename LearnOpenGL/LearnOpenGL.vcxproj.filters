@@ -122,5 +122,9 @@
     <None Include="src\shaders\normalmapping.fs" />
     <None Include="src\shaders\parallaxmapping.vs" />
     <None Include="src\shaders\parallaxmapping.fs" />
+    <None Include="src\shaders\hdr.vs" />
+    <None Include="src\shaders\hdr.fs" />
+    <None Include="src\shaders\lighting.vs" />
+    <None Include="src\shaders\lighting.fs" />
   </ItemGroup>
 </Project>
