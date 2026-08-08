@@ -5,3 +5,6 @@
 
 ### HDR
 ![HDR](/imgs/hdr.png)
+
+### Bloom
+![Bloom](/imgs/bloom.png)

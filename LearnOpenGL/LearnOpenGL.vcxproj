@@ -136,6 +136,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="src\shaders\blinn-phong.fs" />
+    <None Include="src\shaders\bloom.fs" />
+    <None Include="src\shaders\bloom.vs" />
+    <None Include="src\shaders\blur.fs" />
+    <None Include="src\shaders\blur.vs" />
+    <None Include="src\shaders\color.fs" />
+    <None Include="src\shaders\color.vs" />
     <None Include="src\shaders\cubemapDepth.fs" />
     <None Include="src\shaders\cubemapDepth.gs" />
     <None Include="src\shaders\cubemapDepth.vs" />
@@ -148,6 +154,8 @@
     <None Include="src\shaders\instancing.vs" />
     <None Include="src\shaders\lighting.fs" />
     <None Include="src\shaders\lighting.vs" />
+    <None Include="src\shaders\lighting_bloom.fs" />
+    <None Include="src\shaders\lighting_bloom.vs" />
     <None Include="src\shaders\model.fs" />
     <None Include="src\shaders\model.vs" />
     <None Include="src\shaders\normalmapping.fs" />

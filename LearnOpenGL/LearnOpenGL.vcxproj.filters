@@ -112,19 +112,67 @@
     <None Include="src\shaders\blinn-phong.vs">
       <Filter>來源檔案</Filter>
     </None>
-    <None Include="src\shaders\blinn-phong.fs" />
-    <None Include="src\shaders\depth.vs" />
-    <None Include="src\shaders\depth.fs" />
-    <None Include="src\shaders\cubemapDepth.vs" />
-    <None Include="src\shaders\cubemapDepth.fs" />
-    <None Include="src\shaders\cubemapDepth.gs" />
-    <None Include="src\shaders\normalmapping.vs" />
-    <None Include="src\shaders\normalmapping.fs" />
-    <None Include="src\shaders\parallaxmapping.vs" />
-    <None Include="src\shaders\parallaxmapping.fs" />
-    <None Include="src\shaders\hdr.vs" />
-    <None Include="src\shaders\hdr.fs" />
-    <None Include="src\shaders\lighting.vs" />
-    <None Include="src\shaders\lighting.fs" />
+    <None Include="src\shaders\blinn-phong.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\blur.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\blur.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\color.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\color.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\cubemapDepth.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\cubemapDepth.gs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\cubemapDepth.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\depth.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\depth.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\hdr.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\hdr.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\lighting.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\lighting.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\lighting_bloom.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\lighting_bloom.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\normalmapping.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\normalmapping.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\parallaxmapping.fs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\parallaxmapping.vs">
+      <Filter>資源檔</Filter>
+    </None>
+    <None Include="src\shaders\bloom.vs" />
+    <None Include="src\shaders\bloom.fs" />
   </ItemGroup>
 </Project>
