@@ -68,7 +68,7 @@ vec3 BlinnPhong() {
     // shadow
     float shadow = ShadowCalculation();
 
-    return ambient + (1.0 - shadow) * (diffuse + specular);
+    return ambient + (1.0 - shadow) * (diffuse + specular) * attenuation;
 }
 
 void main()

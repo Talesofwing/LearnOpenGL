@@ -148,6 +148,10 @@
     <None Include="src\shaders\depth.fs" />
     <None Include="src\shaders\depth.vs" />
     <None Include="src\shaders\explode.gs" />
+    <None Include="src\shaders\gbuffer.fs" />
+    <None Include="src\shaders\gbuffer.vs" />
+    <None Include="src\shaders\gbuffer_final.fs" />
+    <None Include="src\shaders\gbuffer_final.vs" />
     <None Include="src\shaders\hdr.fs" />
     <None Include="src\shaders\hdr.vs" />
     <None Include="src\shaders\instancing.fs" />

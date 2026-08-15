@@ -174,5 +174,9 @@
     </None>
     <None Include="src\shaders\bloom.vs" />
     <None Include="src\shaders\bloom.fs" />
+    <None Include="src\shaders\gbuffer.vs" />
+    <None Include="src\shaders\gbuffer.fs" />
+    <None Include="src\shaders\gbuffer_final.vs" />
+    <None Include="src\shaders\gbuffer_final.fs" />
   </ItemGroup>
 </Project>
