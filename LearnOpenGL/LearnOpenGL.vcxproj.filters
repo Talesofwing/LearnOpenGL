@@ -178,5 +178,9 @@
     <None Include="src\shaders\gbuffer.fs" />
     <None Include="src\shaders\gbuffer_final.vs" />
     <None Include="src\shaders\gbuffer_final.fs" />
+    <None Include="src\shaders\ssao.vs" />
+    <None Include="src\shaders\ssao.fs" />
+    <None Include="src\shaders\ssaoBlur.vs" />
+    <None Include="src\shaders\ssaoBlur.fs" />
   </ItemGroup>
 </Project>

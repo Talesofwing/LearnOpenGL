@@ -11,17 +11,21 @@ layout (std140) uniform Matrices
 };
 uniform mat4 model;
 
+uniform bool invertedNormals;
+
 out VS_OUT {
-    vec3 WorldPos;
+    vec3 FragPos;
     vec3 Normal;
     vec2 TexCoords;
 } vs_out;
 
 void main()
 {
-    vs_out.WorldPos = vec3(model * vec4(aPos, 1.0));
+    vec4 viewPos = view * model * vec4(aPos, 1.0);
+    vs_out.FragPos = viewPos.xyz;
     vs_out.TexCoords = aTexCoords;
-    vs_out.Normal = aNormal * mat3(inverse(model));
+    vs_out.Normal = transpose(inverse(mat3(view * model))) * aNormal;
+    vs_out.Normal = vs_out.Normal * (invertedNormals ? -1 : 1);
 
-    gl_Position = projection * view * vec4(vs_out.WorldPos, 1.0);
+    gl_Position = projection * viewPos;
 }

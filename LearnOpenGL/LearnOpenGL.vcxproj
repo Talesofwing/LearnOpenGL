@@ -179,6 +179,10 @@
       <FileType>Document</FileType>
     </None>
     <ClCompile Include="src\stb_image_implementation.cpp" />
+    <None Include="src\shaders\ssao.fs" />
+    <None Include="src\shaders\ssao.vs" />
+    <None Include="src\shaders\ssaoBlur.fs" />
+    <None Include="src\shaders\ssaoBlur.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\shaders\normalVisualizer.gs" />
