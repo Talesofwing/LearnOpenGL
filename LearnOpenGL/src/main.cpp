@@ -711,8 +711,6 @@ int main() {
 			glm::vec3 lightPosView = glm::vec3(camera.GetViewMatrix() * glm::vec4(lightPos, 1.0));
 			gbufferFinalShader.setVec3("light.Position", lightPosView);
 			gbufferFinalShader.setVec3("light.Color", lightColor);
-			gbufferFinalShader.setFloat("light.Linear", 0.09f);
-			gbufferFinalShader.setFloat("light.Quadratic", 0.032f);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, gPosition);
 			glActiveTexture(GL_TEXTURE1);

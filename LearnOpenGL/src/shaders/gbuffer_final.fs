@@ -11,8 +11,6 @@ uniform bool ssaoEnabled;
 struct Light {
     vec3 Position;
     vec3 Color;
-    float Linear;
-    float Quadratic;
 };
 uniform Light light;
 
@@ -36,10 +34,8 @@ void main()
     float spec = pow(max(dot(Normal, halfwayDir), 0.0), 8.0);
     vec3 specular = light.Color * spec;
     float distance = length(light.Position - FragPos);
-    float attenuation = 1.0 / (1.0 + light.Linear * distance + light.Quadratic * distance * distance);
-    diffuse *= attenuation;
-    specular *= attenuation;
-    lighting += diffuse + specular;
+    float attenuation = 1.0 / max(distance * distance, 0.0001);
+    lighting += (diffuse + specular) * attenuation;
 
     FragColor = vec4(lighting, 1.0);
 }
