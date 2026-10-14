@@ -168,6 +168,8 @@
     <None Include="src\shaders\normalVisualizer.vs" />
     <None Include="src\shaders\parallaxmapping.fs" />
     <None Include="src\shaders\parallaxmapping.vs" />
+    <None Include="src\shaders\pbr_direct.fs" />
+    <None Include="src\shaders\pbr_direct.vs" />
     <None Include="src\shaders\rock.fs" />
     <None Include="src\shaders\rock.vs" />
     <None Include="src\shaders\reflection.fs">

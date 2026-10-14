@@ -182,5 +182,7 @@
     <None Include="src\shaders\ssao.fs" />
     <None Include="src\shaders\ssaoBlur.vs" />
     <None Include="src\shaders\ssaoBlur.fs" />
+    <None Include="src\shaders\pbr_direct.vs" />
+    <None Include="src\shaders\pbr_direct.fs" />
   </ItemGroup>
 </Project>

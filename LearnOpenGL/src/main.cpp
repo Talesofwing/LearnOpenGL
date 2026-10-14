@@ -27,7 +27,7 @@ float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 // Lighting
 glm::vec3 lightPos = glm::vec3(2.0f, 4.0f, -2.0f);
@@ -408,215 +408,105 @@ int main() {
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glBindVertexArray(0);
 
-	// load textures
-	// =============
-	unsigned int cubeTexture = loadTexture("resources/imgs/wood.png", false);			// don't gamma correction
-	unsigned int srgbCubeTexture = loadTexture("resources/imgs/wood.png", true);
-	unsigned int woodTexture = loadTexture("resources/imgs/wood.png", false);
-	unsigned int srgbWoodTexture = loadTexture("resources/imgs/wood.png", true);
-	unsigned int brickTexture = loadTexture("resources/imgs/brickwall.jpg", false);
-	unsigned int srgbBrickTexture = loadTexture("resources/imgs/brickwall.jpg", true);
-	unsigned int brickNormalMap = loadTexture("resources/imgs/brickwall_normal.jpg", false);
-	unsigned int brick2Texture = loadTexture("resources/imgs/bricks2.jpg", false);
-	unsigned int srgbBrick2Texture = loadTexture("resources/imgs/bricks2.jpg", true);
-	unsigned int brick2NormalMap = loadTexture("resources/imgs/bricks2_normal.jpg", false);
-	unsigned int brick2DisplacementMap = loadTexture("resources/imgs/bricks2_disp.jpg", false);
-	unsigned int containerTexture = loadTexture("resources/imgs/container.jpg", false);
-	unsigned int srgbContainerTexture = loadTexture("resources/imgs/container.jpg", true);
+	// sphere VAO
+	// ----------
+	std::vector<float> sphereData;
+	std::vector<unsigned int> sphereIndices;
+	const unsigned int X_SEGMENTS = 64;
+	const unsigned int Y_SEGMENTS = 64;
+	const float PI = 3.14159265359f;
+	for (unsigned int y = 0; y <= Y_SEGMENTS; ++y) {
+		for (unsigned int x = 0; x <= X_SEGMENTS; ++x) {
+			float xSegment = (float)x / (float)X_SEGMENTS;
+			float ySegment = (float)y / (float)Y_SEGMENTS;
+			float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+			float yPos = std::cos(ySegment * PI);
+			float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+			// position, normal (unit sphere: same as position), texcoord
+			sphereData.insert(sphereData.end(), {xPos, yPos, zPos, xPos, yPos, zPos, xSegment, ySegment});
+		}
+	}
+	bool oddRow = false;
+	for (unsigned int y = 0; y < Y_SEGMENTS; ++y) {
+		if (!oddRow) {
+			for (unsigned int x = 0; x <= X_SEGMENTS; ++x) {
+				sphereIndices.push_back(y * (X_SEGMENTS + 1) + x);
+				sphereIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+			}
+		} else {
+			for (int x = X_SEGMENTS; x >= 0; --x) {
+				sphereIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				sphereIndices.push_back(y * (X_SEGMENTS + 1) + x);
+			}
+		}
+		oddRow = !oddRow;
+	}
+	unsigned int sphereIndexCount = static_cast<unsigned int>(sphereIndices.size());
 
-	// configure hdr framebuffer
-	// ====================================
-	unsigned int hdrFBO;
-	glGenFramebuffers(1, &hdrFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-	unsigned int hdrColorBuffer;
-	glGenTextures(1, &hdrColorBuffer);
-	glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	// attach texture to framebuffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrColorBuffer, 0);
+	unsigned int sphereVAO, sphereVBO, sphereEBO;
+	glGenVertexArrays(1, &sphereVAO);
+	glGenBuffers(1, &sphereVBO);
+	glGenBuffers(1, &sphereEBO);
+	glBindVertexArray(sphereVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
+	glBufferData(GL_ARRAY_BUFFER, sphereData.size() * sizeof(float), sphereData.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(unsigned int), sphereIndices.data(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glBindVertexArray(0);
 
-	unsigned int rboDepth;
-	glGenRenderbuffers(1, &rboDepth);
-	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "Hdr buffer not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// configure g-buffer
-	// ------------------
-	unsigned int gBuffer;
-	glGenFramebuffers(1, &gBuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
-	unsigned int gPosition, gNormal, gAlbedo;
-
-	// - position color buffer
-	glGenTextures(1, &gPosition);
-	glBindTexture(GL_TEXTURE_2D, gPosition);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
-
-	// - normal color buffer
-	glGenTextures(1, &gNormal);
-	glBindTexture(GL_TEXTURE_2D, gNormal);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
-
-	// - color + specular color buffer
-	glGenTextures(1, &gAlbedo);
-	glBindTexture(GL_TEXTURE_2D, gAlbedo);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedo, 0);
-
-	// - depth buffer
-	unsigned int rRboDepth;
-	glGenRenderbuffers(1, &rRboDepth);
-	glBindRenderbuffer(GL_RENDERBUFFER, rRboDepth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rRboDepth);
-
-	unsigned int attachments[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-	glDrawBuffers(3, attachments);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "G-Buffer not complete!" << std::endl;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// Load model
-	// ==========
-	Model backpack("backpack/backpack.obj", gammaCorrectionEnabled);
-	//Model cyborg("cyborg/cyborg.obj", gammaCorrectionEnabled);
-
-	// Wireframe draw
-	// ==============
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	// load PBR material textures
+	// ==========================
+	// albedo is linearized in the shader (pow 2.2), so load everything without sRGB
+	unsigned int albedoMap = loadTexture("resources/imgs/rustediron/rustediron2_basecolor.png", false);
+	unsigned int normalMap = loadTexture("resources/imgs/rustediron/rustediron2_normal.png", false);
+	unsigned int metallicMap = loadTexture("resources/imgs/rustediron/rustediron2_metallic.png", false);
+	unsigned int roughnessMap = loadTexture("resources/imgs/rustediron/rustediron2_roughness.png", false);
+	unsigned int aoMap = loadTexture("resources/imgs/rustediron/ao.png", false);
 
 	// Setup UBO
 	// =========
-
 	unsigned int uboMatrices;
 	glGenBuffers(1, &uboMatrices);
 	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
 	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	//glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
 
 	// build and compile shaders
 	// -------------------------
-	Shader modelShader("model.vs", "model.fs");
-	modelShader.use();
-	modelShader.setInt("texture_diffuse1", 0);
-	modelShader.setInt("texture_specular1", 1);
-	modelShader.setInt("texture_normal1", 2);
-	modelShader.setVec3("lightPos", lightPos);
-	unsigned int uniformBlockIndex = glGetUniformBlockIndex(modelShader.ID, "Matrices");
-	glUniformBlockBinding(modelShader.ID, uniformBlockIndex, 0);
+	Shader pbrShader("pbr_direct.vs", "pbr_direct.fs");
+	pbrShader.use();
+	pbrShader.setInt("albedoMap", 0);
+	pbrShader.setInt("normalMap", 1);
+	pbrShader.setInt("metallicMap", 2);
+	pbrShader.setInt("roughnessMap", 3);
+	pbrShader.setInt("aoMap", 4);
+	unsigned int uniformBlockIndex = glGetUniformBlockIndex(pbrShader.ID, "Matrices");
+	glUniformBlockBinding(pbrShader.ID, uniformBlockIndex, 0);
 
-	Shader colorShader("color.vs", "color.fs");
-	colorShader.use();
-	uniformBlockIndex = glGetUniformBlockIndex(colorShader.ID, "Matrices");
-	glUniformBlockBinding(colorShader.ID, uniformBlockIndex, 0);
+	// lights (shader loops over 4; unused slots stay black)
+	// ------
+	glm::vec3 lightPositions[] = {
+		glm::vec3(0.0f, 0.0f, 10.0f),
+	};
+	glm::vec3 lightColors[] = {
+		glm::vec3(150.0f, 150.0f, 150.0f),
+	};
+	int nrRows = 7;
+	int nrColumns = 7;
+	float spacing = 2.5f;
 
-	Shader hdrShader("hdr.vs", "hdr.fs");
-	hdrShader.use();
-	hdrShader.setInt("hdrBuffer", 0);
-	hdrShader.setFloat("exposure", 1);
-
-	Shader gbufferShader("gbuffer.vs", "gbuffer.fs");
-	gbufferShader.use();
-	uniformBlockIndex = glGetUniformBlockIndex(gbufferShader.ID, "Matrices");
-	glUniformBlockBinding(gbufferShader.ID, uniformBlockIndex, 0);
-
-	Shader gbufferFinalShader("gbuffer_final.vs", "gbuffer_final.fs");
-	gbufferFinalShader.use();
-	gbufferFinalShader.setInt("gPosition", 0);
-	gbufferFinalShader.setInt("gNormal", 1);
-	gbufferFinalShader.setInt("gAlbedo", 2);
-	gbufferFinalShader.setInt("ssao", 3);
-
-	Shader ssaoShader("ssao.vs", "ssao.fs");
-	ssaoShader.use();
-	ssaoShader.setInt("gPosition", 0);
-	ssaoShader.setInt("gNormal", 1);
-	ssaoShader.setInt("texNoise", 2);
-
-	Shader ssaoBlurShader("ssaoBlur.vs", "ssaoBlur.fs");
-	ssaoBlurShader.use();
-	ssaoBlurShader.setInt("ssaoInput", 0);
-
-	// sample kernels
-	// --------------
-	std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
-	std::default_random_engine generator;
-	std::vector<glm::vec3> ssaoKernel;
-	for (unsigned int i = 0; i < 64; ++i) {
-		glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0,
-						 randomFloats(generator) * 2.0 - 1.0,
-						 randomFloats(generator));
-		sample = glm::normalize(sample);
-		sample *= randomFloats(generator);
-		float scale = (float)i / 64.0f;
-		scale = lerp(0.1f, 1.0f, scale * scale);
-		sample *= scale;
-		ssaoKernel.push_back(sample);
+	// lights are static, so upload them once
+	for (unsigned int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); ++i) {
+		pbrShader.setVec3("lightPositions[" + std::to_string(i) + "]", lightPositions[i]);
+		pbrShader.setVec3("lightColors[" + std::to_string(i) + "]", lightColors[i]);
 	}
-
-	// 4x4 array of random rotation vectors oriented around the tangent-space surface normal
-	std::vector<glm::vec3> ssaoNoise;
-	for (unsigned int i = 0; i < 16; ++i) {
-		glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0,
-						randomFloats(generator) * 2.0 - 1.0,
-						0.0f);
-		ssaoNoise.push_back(noise);
-	}
-
-	unsigned int noiseTexture;
-	glGenTextures(1, &noiseTexture);
-	glBindTexture(GL_TEXTURE_2D, noiseTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	// SSAO FBO
-	// --------
-	unsigned int ssaoFBO;
-	glGenFramebuffers(1, &ssaoFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
-	unsigned int ssaoColorBuffer;
-	glGenTextures(1, &ssaoColorBuffer);
-	glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCR_WIDTH, SCR_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBuffer, 0);
-
-	unsigned int ssaoBlurFBO, ssaoColorBufferBlur;
-	glGenFramebuffers(1, &ssaoBlurFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
-	glGenTextures(1, &ssaoColorBufferBlur);
-	glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCR_WIDTH, SCR_HEIGHT, 0, GL_RED, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBufferBlur, 0);
 
 	// render loop
 	// -----------
@@ -633,106 +523,47 @@ int main() {
 		// -----
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		// set uniforms
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 50.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
 		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
 		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		// 1. geometry pass: render scene's geometry/color data into gbuffer
-		// -----------------------------------------------------------------
-		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			gbufferShader.use();
-			// room cube
-			// ---------
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 7.0f, 0.0f));
-			model = glm::scale(model, glm::vec3(7.5f));
-			gbufferShader.setMat4("model", model);
-			gbufferShader.setInt("invertedNormals", 1);
-			glBindVertexArray(cubeVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-			// backpacks
-			// ---------
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 0.5f, 0.0f));
-			model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-			model = glm::scale(model, glm::vec3(1.0f));
-			gbufferShader.setMat4("model", model);
-			gbufferShader.setInt("invertedNormals", 0);
-			backpack.Draw(gbufferShader);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		pbrShader.use();
+		pbrShader.setVec3("camPos", camera.Position);
 
-		// 2. generate SSAO texture
-		// ------------------------
-		glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
-			glClear(GL_COLOR_BUFFER_BIT);
-			ssaoShader.use();
-			// Send kernel + rotation
-			for (unsigned int i = 0; i < 64; ++i)
-				ssaoShader.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
-			ssaoShader.setMat4("projection", projection);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gPosition);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, gNormal);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, noiseTexture);
-			glBindVertexArray(quadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// 3. blur SSAO texture to remove noise
-		// ------------------------------------
-		glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
-			glClear(GL_COLOR_BUFFER_BIT);
-			ssaoBlurShader.use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
-			glBindVertexArray(quadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// 4. lighting pass: traditional deferred Blinn-Phong lighting with added screen-space ambient occlusion
-		// -----------------------------------------------------------------------------------------------------
-		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			gbufferFinalShader.use();
-			gbufferFinalShader.setBool("ssaoEnabled", ssaoEnabled);
-			// send light relevant uniforms
-			glm::vec3 lightPosView = glm::vec3(camera.GetViewMatrix() * glm::vec4(lightPos, 1.0));
-			gbufferFinalShader.setVec3("light.Position", lightPosView);
-			gbufferFinalShader.setVec3("light.Color", lightColor);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gPosition);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, gNormal);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, gAlbedo);
-			glActiveTexture(GL_TEXTURE3); // add extra SSAO texture to lighting pass
-			glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
-			glBindVertexArray(quadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// 5. hdr pass
-		// -----------
-		glDisable(GL_DEPTH_TEST);
-		hdrShader.use();
-		hdrShader.setBool("gammaCorrectionEnabled", gammaCorrectionEnabled);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glEnable(GL_DEPTH_TEST);
+		glBindTexture(GL_TEXTURE_2D, albedoMap);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, normalMap);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, metallicMap);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, roughnessMap);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, aoMap);
+
+		// render rows*column number of spheres with material properties defined by textures (they all have the same material properties)
+		glBindVertexArray(sphereVAO);
+		for (int row = 0; row < nrRows; ++row) {
+			for (int col = 0; col < nrColumns; ++col) {
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3(
+					(float)(col - (nrColumns / 2)) * spacing,
+					(float)(row - (nrRows / 2)) * spacing,
+					0.0f
+				));
+				pbrShader.setMat4("model", model);
+				glDrawElements(GL_TRIANGLE_STRIP, sphereIndexCount, GL_UNSIGNED_INT, 0);
+			}
+		}
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
 		glfwSwapBuffers(window);
@@ -742,9 +573,12 @@ int main() {
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteVertexArrays(1, &planeVAO);
+	glDeleteVertexArrays(1, &sphereVAO);
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &quadVBO);
 	glDeleteBuffers(1, &planeVBO);
+	glDeleteBuffers(1, &sphereVBO);
+	glDeleteBuffers(1, &sphereEBO);
 
 	// ===== terminate, clearing all previously allocated glfw resources =====
 	glfwTerminate();
