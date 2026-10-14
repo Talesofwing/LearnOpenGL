@@ -168,6 +168,11 @@
     <None Include="src\shaders\normalVisualizer.vs" />
     <None Include="src\shaders\parallaxmapping.fs" />
     <None Include="src\shaders\parallaxmapping.vs" />
+    <None Include="src\shaders\background.fs" />
+    <None Include="src\shaders\equirectangular_to_cubemap.fs" />
+    <None Include="src\shaders\irradiance_convolution.fs" />
+    <None Include="src\shaders\pbr_diffuseIrradiance.fs" />
+    <None Include="src\shaders\pbr_diffuseIrradiance.vs" />
     <None Include="src\shaders\pbr_direct.fs" />
     <None Include="src\shaders\pbr_direct.vs" />
     <None Include="src\shaders\rock.fs" />

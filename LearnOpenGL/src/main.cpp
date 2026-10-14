@@ -35,9 +35,9 @@ glm::vec3 lightColor = glm::vec3(0.2f, 0.2f, 0.7f);
 
 // variables
 bool isGPressed = false;
-bool isOPressed = false;
+bool isHPressed = false;
 bool gammaCorrectionEnabled = true;
-bool ssaoEnabled = true;
+bool hdrEnabled = true;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
@@ -67,15 +67,15 @@ void processInput(GLFWwindow* window) {
 		isGPressed = false;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && !isOPressed) {
-		ssaoEnabled = !ssaoEnabled;
-		isOPressed = true;
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS && !isHPressed) {
+		hdrEnabled = !hdrEnabled;
+		isHPressed = true;
 
-		std::cout << "SSAO Enabled: " << (ssaoEnabled ? "True" : "False") << std::endl;
+		std::cout << "HDR Tone Mapping Enabled: " << (hdrEnabled ? "True" : "False") << std::endl;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_RELEASE) {
-		isOPressed = false;
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_RELEASE) {
+		isHPressed = false;
 	}
 }
 
@@ -296,6 +296,7 @@ void calculateQuadTBN() {
 
 int main() {
 	std::cout << "Gamma Correction Enabled: " << (gammaCorrectionEnabled ? "True" : "False") << std::endl;
+	std::cout << "HDR Tone Mapping Enabled: " << (hdrEnabled ? "True" : "False") << std::endl;
 
 	// ===== glfw initialize and configure =====
 	glfwInit();
@@ -338,7 +339,7 @@ int main() {
 	// configure global opengl state
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	glDepthFunc(GL_LEQUAL);  // skybox depth is pinned to 1.0, so it must pass against the cleared depth
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
@@ -480,15 +481,104 @@ int main() {
 
 	// build and compile shaders
 	// -------------------------
-	Shader pbrShader("pbr_direct.vs", "pbr_direct.fs");
+	Shader pbrShader("pbr_diffuseIrradiance.vs", "pbr_diffuseIrradiance.fs");
 	pbrShader.use();
 	pbrShader.setInt("albedoMap", 0);
 	pbrShader.setInt("normalMap", 1);
 	pbrShader.setInt("metallicMap", 2);
 	pbrShader.setInt("roughnessMap", 3);
 	pbrShader.setInt("aoMap", 4);
+	pbrShader.setInt("irradianceMap", 5);
 	unsigned int uniformBlockIndex = glGetUniformBlockIndex(pbrShader.ID, "Matrices");
 	glUniformBlockBinding(pbrShader.ID, uniformBlockIndex, 0);
+
+	Shader backgroundShader("skybox.vs", "background.fs");
+	backgroundShader.use();
+	backgroundShader.setInt("environmentMap", 0);
+
+	// IBL: load the HDR environment map
+	// =================================
+	int hdrWidth, hdrHeight, hdrComponents;
+	float* hdrData = stbi_loadf("resources/imgs/hdr/newport_loft.hdr", &hdrWidth, &hdrHeight, &hdrComponents, 3);
+	unsigned int hdrTexture;
+	glGenTextures(1, &hdrTexture);
+	glBindTexture(GL_TEXTURE_2D, hdrTexture);
+	if (hdrData) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, hdrWidth, hdrHeight, 0, GL_RGB, GL_FLOAT, hdrData);
+	} else {
+		std::cout << "Failed to load HDR image." << std::endl;
+	}
+	stbi_image_free(hdrData);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// IBL: equirectangular map -> environment cubemap -> irradiance cubemap
+	// =====================================================================
+	auto createCubemap = [](int size) {
+		unsigned int id;
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+		for (unsigned int i = 0; i < 6; ++i)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, size, size, 0, GL_RGB, GL_FLOAT, nullptr);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		return id;
+	};
+	unsigned int envCubemap = createCubemap(512);
+	unsigned int irradianceMap = createCubemap(32);
+
+	// a 90 degree camera at the origin looking at each cube face
+	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 captureViews[] = {
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
+
+	// draws the inside of the cube once per face into the cubemap;
+	// no depth buffer needed: seen from the center the faces never overlap
+	unsigned int captureFBO;
+	glGenFramebuffers(1, &captureFBO);
+	auto renderToCubemap = [&](Shader& shader, unsigned int cubemap, int size) {
+		shader.use();
+		shader.setMat4("projection", captureProjection);
+		glViewport(0, 0, size, size);
+		glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+		glBindVertexArray(cubeVAO);
+		for (unsigned int i = 0; i < 6; ++i) {
+			shader.setMat4("view", captureViews[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap, 0);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	};
+
+	Shader equirectToCubemapShader("skybox.vs", "equirectangular_to_cubemap.fs");
+	equirectToCubemapShader.use();
+	equirectToCubemapShader.setInt("equirectangularMap", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdrTexture);
+	renderToCubemap(equirectToCubemapShader, envCubemap, 512);
+
+	Shader irradianceShader("skybox.vs", "irradiance_convolution.fs");
+	irradianceShader.use();
+	irradianceShader.setInt("environmentMap", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	renderToCubemap(irradianceShader, irradianceMap, 32);
+
+	// only needed for the one-time precompute above
+	glDeleteFramebuffers(1, &captureFBO);
+	glDeleteTextures(1, &hdrTexture);
 
 	// lights (shader loops over 4; unused slots stay black)
 	// ------
@@ -502,7 +592,8 @@ int main() {
 	int nrColumns = 7;
 	float spacing = 2.5f;
 
-	// lights are static, so upload them once
+	// lights are static, so upload them once (glUniform* targets the bound program, and the IBL passes above switched it)
+	pbrShader.use();
 	for (unsigned int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); ++i) {
 		pbrShader.setVec3("lightPositions[" + std::to_string(i) + "]", lightPositions[i]);
 		pbrShader.setVec3("lightColors[" + std::to_string(i) + "]", lightColors[i]);
@@ -538,6 +629,8 @@ int main() {
 
 		pbrShader.use();
 		pbrShader.setVec3("camPos", camera.Position);
+		pbrShader.setBool("gammaEnabled", gammaCorrectionEnabled);
+		pbrShader.setBool("hdrEnabled", hdrEnabled);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, albedoMap);
@@ -549,6 +642,8 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, roughnessMap);
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, aoMap);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
 
 		// render rows*column number of spheres with material properties defined by textures (they all have the same material properties)
 		glBindVertexArray(sphereVAO);
@@ -564,6 +659,17 @@ int main() {
 				glDrawElements(GL_TRIANGLE_STRIP, sphereIndexCount, GL_UNSIGNED_INT, 0);
 			}
 		}
+
+		// render skybox last so it only fills pixels the spheres left empty
+		backgroundShader.use();
+		backgroundShader.setMat4("projection", projection);
+		backgroundShader.setMat4("view", glm::mat4(glm::mat3(view)));  // drop translation
+		backgroundShader.setBool("gammaEnabled", gammaCorrectionEnabled);
+		backgroundShader.setBool("hdrEnabled", hdrEnabled);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+		glBindVertexArray(cubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// swap buffers and poll IO events (keys pressed/released, mouse move etc.)
 		glfwSwapBuffers(window);
