@@ -4,6 +4,8 @@
 #include <iostream>
 #include <map>
 #include <random>
+#include <array>
+#include <algorithm>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -27,7 +29,7 @@ float lastX = SCR_WIDTH / 2, lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 11.0f));  // far enough to frame the 5-sphere row
 
 // Lighting
 glm::vec3 lightPos = glm::vec3(2.0f, 4.0f, -2.0f);
@@ -36,11 +38,37 @@ glm::vec3 lightColor = glm::vec3(0.2f, 0.2f, 0.7f);
 // variables
 bool isGPressed = false;
 bool isHPressed = false;
+bool isMPressed = false;
+bool isBPressed = false;
 bool gammaCorrectionEnabled = true;
 bool hdrEnabled = true;
 
+// scenes, switched with M
+const char* sceneNames[] = { "Spheres", "Damaged Helmet", "Cerberus" };
+const int sceneCount = sizeof(sceneNames) / sizeof(sceneNames[0]);
+int currentScene = 0;
+
+// IBL environments, switched with B
+const char* hdrPaths[] = {
+	"resources/imgs/hdr/newport_loft.hdr",
+	"resources/imgs/hdr/brown_photostudio_02_2k.hdr",
+	"resources/imgs/hdr/venice_sunset_2k.hdr",
+	"resources/imgs/hdr/kloofendal_48d_partly_cloudy_puresky_2k.hdr",
+	"resources/imgs/hdr/industrial_sunset_puresky_2k.hdr",
+};
+const int envCount = sizeof(hdrPaths) / sizeof(hdrPaths[0]);
+int currentEnv = 0;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
+}
+
+// true only on the frame the key goes down, so holding it doesn't toggle every frame
+bool keyPressedOnce(GLFWwindow* window, int key, bool& isPressed) {
+	bool down = glfwGetKey(window, key) == GLFW_PRESS;
+	bool pressedNow = down && !isPressed;
+	isPressed = down;
+	return pressedNow;
 }
 
 void processInput(GLFWwindow* window) {
@@ -56,26 +84,24 @@ void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !isGPressed) {
+	if (keyPressedOnce(window, GLFW_KEY_G, isGPressed)) {
 		gammaCorrectionEnabled = !gammaCorrectionEnabled;
-		isGPressed = true;
-
 		std::cout << "Gamma Correction Enabled: " << (gammaCorrectionEnabled ? "True" : "False") << std::endl;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_RELEASE) {
-		isGPressed = false;
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS && !isHPressed) {
+	if (keyPressedOnce(window, GLFW_KEY_H, isHPressed)) {
 		hdrEnabled = !hdrEnabled;
-		isHPressed = true;
-
 		std::cout << "HDR Tone Mapping Enabled: " << (hdrEnabled ? "True" : "False") << std::endl;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_RELEASE) {
-		isHPressed = false;
+	if (keyPressedOnce(window, GLFW_KEY_M, isMPressed)) {
+		currentScene = (currentScene + 1) % sceneCount;
+		std::cout << "Scene: " << sceneNames[currentScene] << std::endl;
+	}
+
+	if (keyPressedOnce(window, GLFW_KEY_B, isBPressed)) {
+		currentEnv = (currentEnv + 1) % envCount;
+		std::cout << "Environment: " << hdrPaths[currentEnv] << std::endl;
 	}
 }
 
@@ -297,6 +323,7 @@ void calculateQuadTBN() {
 int main() {
 	std::cout << "Gamma Correction Enabled: " << (gammaCorrectionEnabled ? "True" : "False") << std::endl;
 	std::cout << "HDR Tone Mapping Enabled: " << (hdrEnabled ? "True" : "False") << std::endl;
+	std::cout << "M: switch scene, B: switch environment" << std::endl;
 
 	// ===== glfw initialize and configure =====
 	glfwInit();
@@ -340,6 +367,7 @@ int main() {
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);  // skybox depth is pinned to 1.0, so it must pass against the cleared depth
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);  // filter across cube face edges, otherwise the blurry prefilter mips show seams
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
@@ -464,11 +492,77 @@ int main() {
 	// load PBR material textures
 	// ==========================
 	// albedo is linearized in the shader (pow 2.2), so load everything without sRGB
-	unsigned int albedoMap = loadTexture("resources/imgs/rustediron/rustediron2_basecolor.png", false);
-	unsigned int normalMap = loadTexture("resources/imgs/rustediron/rustediron2_normal.png", false);
-	unsigned int metallicMap = loadTexture("resources/imgs/rustediron/rustediron2_metallic.png", false);
-	unsigned int roughnessMap = loadTexture("resources/imgs/rustediron/rustediron2_roughness.png", false);
-	unsigned int aoMap = loadTexture("resources/imgs/rustediron/ao.png", false);
+	// 1x1 single-value texture, stands in for maps a material doesn't ship with
+	auto createSolidTexture = [](unsigned char value) {
+		unsigned int id;
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_2D, id);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 1, 1, 0, GL_RED, GL_UNSIGNED_BYTE, &value);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);  // default filter expects mipmaps and would sample black
+		return id;
+	};
+	unsigned int whiteTexture = createSolidTexture(255);  // ao: no occlusion
+	unsigned int blackTexture = createSolidTexture(0);    // emissive: no glow
+
+	// maps in sampler unit order: albedo, normal, metallic, roughness, ao, emissive
+	using MaterialMaps = std::array<unsigned int, 6>;
+	auto loadMaterial = [&](const std::string& dir) -> MaterialMaps {
+		return {
+			loadTexture((dir + "/albedo.png").c_str(), false),
+			loadTexture((dir + "/normal.png").c_str(), false),
+			loadTexture((dir + "/metallic.png").c_str(), false),
+			loadTexture((dir + "/roughness.png").c_str(), false),
+			loadTexture((dir + "/ao.png").c_str(), false),
+			blackTexture,
+		};
+	};
+	std::vector<MaterialMaps> sphereMaterials = {
+		{
+			loadTexture("resources/imgs/rustediron/rustediron2_basecolor.png", false),
+			loadTexture("resources/imgs/rustediron/rustediron2_normal.png", false),
+			loadTexture("resources/imgs/rustediron/rustediron2_metallic.png", false),
+			loadTexture("resources/imgs/rustediron/rustediron2_roughness.png", false),
+			loadTexture("resources/imgs/rustediron/ao.png", false),
+			blackTexture,
+		},
+		loadMaterial("resources/imgs/gold"),
+		loadMaterial("resources/imgs/grass"),
+		loadMaterial("resources/imgs/plastic"),
+		loadMaterial("resources/imgs/wall"),
+	};
+
+	// Model flips UVs on import, so the models' textures below must be loaded unflipped
+	Model gun("cerberus/cerberus.fbx");
+	Model helmet("damaged_helmet/DamagedHelmet.gltf");
+
+	stbi_set_flip_vertically_on_load(false);
+	MaterialMaps gunMaterial = {
+		loadTexture("resources/models/cerberus/cerberus_A.png", false),
+		loadTexture("resources/models/cerberus/cerberus_N.png", false),
+		loadTexture("resources/models/cerberus/cerberus_M.png", false),
+		loadTexture("resources/models/cerberus/cerberus_R.png", false),
+		whiteTexture,  // the gun ships without an AO map
+		blackTexture,
+	};
+	// glTF packs metallic (B) and roughness (G) into one image; they were split into the two grayscale files read here
+	MaterialMaps helmetMaterial = {
+		loadTexture("resources/models/damaged_helmet/Default_albedo.jpg", false),
+		loadTexture("resources/models/damaged_helmet/Default_normal.jpg", false),
+		loadTexture("resources/models/damaged_helmet/Default_metallic.png", false),
+		loadTexture("resources/models/damaged_helmet/Default_roughness.png", false),
+		loadTexture("resources/models/damaged_helmet/Default_AO.jpg", false),
+		loadTexture("resources/models/damaged_helmet/Default_emissive.jpg", false),
+	};
+	stbi_set_flip_vertically_on_load(true);
+
+	auto bindMaterial = [](const MaterialMaps& maps) {
+		for (int i = 0; i < 6; ++i) {
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, maps[i]);
+		}
+	};
 
 	// Setup UBO
 	// =========
@@ -481,14 +575,17 @@ int main() {
 
 	// build and compile shaders
 	// -------------------------
-	Shader pbrShader("pbr_diffuseIrradiance.vs", "pbr_diffuseIrradiance.fs");
+	Shader pbrShader("pbr_specularIBL.vs", "pbr_specularIBL.fs");
 	pbrShader.use();
 	pbrShader.setInt("albedoMap", 0);
 	pbrShader.setInt("normalMap", 1);
 	pbrShader.setInt("metallicMap", 2);
 	pbrShader.setInt("roughnessMap", 3);
 	pbrShader.setInt("aoMap", 4);
-	pbrShader.setInt("irradianceMap", 5);
+	pbrShader.setInt("emissiveMap", 5);
+	pbrShader.setInt("irradianceMap", 6);
+	pbrShader.setInt("prefilterMap", 7);
+	pbrShader.setInt("brdfLUT", 8);
 	unsigned int uniformBlockIndex = glGetUniformBlockIndex(pbrShader.ID, "Matrices");
 	glUniformBlockBinding(pbrShader.ID, uniformBlockIndex, 0);
 
@@ -496,26 +593,8 @@ int main() {
 	backgroundShader.use();
 	backgroundShader.setInt("environmentMap", 0);
 
-	// IBL: load the HDR environment map
-	// =================================
-	int hdrWidth, hdrHeight, hdrComponents;
-	float* hdrData = stbi_loadf("resources/imgs/hdr/newport_loft.hdr", &hdrWidth, &hdrHeight, &hdrComponents, 3);
-	unsigned int hdrTexture;
-	glGenTextures(1, &hdrTexture);
-	glBindTexture(GL_TEXTURE_2D, hdrTexture);
-	if (hdrData) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, hdrWidth, hdrHeight, 0, GL_RGB, GL_FLOAT, hdrData);
-	} else {
-		std::cout << "Failed to load HDR image." << std::endl;
-	}
-	stbi_image_free(hdrData);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// IBL: equirectangular map -> environment cubemap -> irradiance cubemap
-	// =====================================================================
+	// IBL: equirectangular map -> environment cubemap -> irradiance + prefiltered specular cubemaps
+	// =============================================================================================
 	auto createCubemap = [](int size) {
 		unsigned int id;
 		glGenTextures(1, &id);
@@ -529,8 +608,6 @@ int main() {
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		return id;
 	};
-	unsigned int envCubemap = createCubemap(512);
-	unsigned int irradianceMap = createCubemap(32);
 
 	// a 90 degree camera at the origin looking at each cube face
 	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -547,7 +624,7 @@ int main() {
 	// no depth buffer needed: seen from the center the faces never overlap
 	unsigned int captureFBO;
 	glGenFramebuffers(1, &captureFBO);
-	auto renderToCubemap = [&](Shader& shader, unsigned int cubemap, int size) {
+	auto renderToCubemap = [&](Shader& shader, unsigned int cubemap, int size, int mip) {
 		shader.use();
 		shader.setMat4("projection", captureProjection);
 		glViewport(0, 0, size, size);
@@ -555,7 +632,7 @@ int main() {
 		glBindVertexArray(cubeVAO);
 		for (unsigned int i = 0; i < 6; ++i) {
 			shader.setMat4("view", captureViews[i]);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap, mip);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
@@ -565,20 +642,97 @@ int main() {
 	Shader equirectToCubemapShader("skybox.vs", "equirectangular_to_cubemap.fs");
 	equirectToCubemapShader.use();
 	equirectToCubemapShader.setInt("equirectangularMap", 0);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, hdrTexture);
-	renderToCubemap(equirectToCubemapShader, envCubemap, 512);
 
 	Shader irradianceShader("skybox.vs", "irradiance_convolution.fs");
 	irradianceShader.use();
 	irradianceShader.setInt("environmentMap", 0);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-	renderToCubemap(irradianceShader, irradianceMap, 32);
+
+	Shader prefilterShader("skybox.vs", "pbr_specularIBL_prefilter.fs");
+	prefilterShader.use();
+	prefilterShader.setInt("environmentMap", 0);
+
+	struct Environment {
+		unsigned int envCubemap;
+		unsigned int irradianceMap;
+		unsigned int prefilterMap;
+	};
+	std::vector<Environment> environments;
+	const int prefilterMipLevels = 5;  // matches MAX_REFLECTION_LOD = 4 in pbr_specularIBL.fs
+
+	for (const char* hdrPath : hdrPaths) {
+		int hdrWidth, hdrHeight, hdrComponents;
+		float* hdrData = stbi_loadf(hdrPath, &hdrWidth, &hdrHeight, &hdrComponents, 3);
+		unsigned int hdrTexture;
+		glGenTextures(1, &hdrTexture);
+		glBindTexture(GL_TEXTURE_2D, hdrTexture);
+		if (hdrData) {
+			// the sun in some skies is brighter than GL_RGB16F can hold (65504); stored as Inf it turns
+			// every blurred IBL sample into NaN, which renders black
+			for (int i = 0; i < hdrWidth * hdrHeight * 3; ++i)
+				hdrData[i] = std::min(hdrData[i], 65504.0f);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, hdrWidth, hdrHeight, 0, GL_RGB, GL_FLOAT, hdrData);
+		} else {
+			std::cout << "Failed to load HDR image: " << hdrPath << std::endl;
+		}
+		stbi_image_free(hdrData);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		Environment env;
+		env.envCubemap = createCubemap(512);
+		env.irradianceMap = createCubemap(32);
+		env.prefilterMap = createCubemap(128);
+		// each mip of the prefilter map stores a blurrier reflection for a higher roughness
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env.prefilterMap);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);  // allocates the mip chain, filled below
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, hdrTexture);
+		renderToCubemap(equirectToCubemapShader, env.envCubemap, 512, 0);
+
+		// the prefilter pass reads blurrier mips for rarely sampled directions, which removes bright dots
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env.envCubemap);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+		renderToCubemap(irradianceShader, env.irradianceMap, 32, 0);
+
+		for (int mip = 0; mip < prefilterMipLevels; ++mip) {
+			prefilterShader.use();
+			prefilterShader.setFloat("roughness", (float)mip / (float)(prefilterMipLevels - 1));
+			renderToCubemap(prefilterShader, env.prefilterMap, 128 >> mip, mip);
+		}
+
+		glDeleteTextures(1, &hdrTexture);
+		environments.push_back(env);
+	}
+
+	// IBL: BRDF integration LUT, only depends on (NdotV, roughness) so one texture serves every environment
+	// ===================================================================================================
+	unsigned int brdfLUTTexture;
+	glGenTextures(1, &brdfLUTTexture);
+	glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	Shader brdfShader("hdr.vs", "pbr_specularIBL_brdf.fs");  // hdr.vs is a plain fullscreen-quad pass-through
+	brdfShader.use();
+	glViewport(0, 0, 512, 512);
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// only needed for the one-time precompute above
 	glDeleteFramebuffers(1, &captureFBO);
-	glDeleteTextures(1, &hdrTexture);
 
 	// lights (shader loops over 4; unused slots stay black)
 	// ------
@@ -588,9 +742,7 @@ int main() {
 	glm::vec3 lightColors[] = {
 		glm::vec3(150.0f, 150.0f, 150.0f),
 	};
-	int nrRows = 7;
-	int nrColumns = 7;
-	float spacing = 2.5f;
+	float spacing = 2.2f;
 
 	// lights are static, so upload them once (glUniform* targets the bound program, and the IBL passes above switched it)
 	pbrShader.use();
@@ -598,6 +750,17 @@ int main() {
 		pbrShader.setVec3("lightPositions[" + std::to_string(i) + "]", lightPositions[i]);
 		pbrShader.setVec3("lightColors[" + std::to_string(i) + "]", lightColors[i]);
 	}
+
+	// the models' own materials point at files we don't use (missing .tga, packed glTF maps),
+	// so skip Mesh::Draw's texture binding and draw the VAOs directly
+	auto drawModel = [&](Model& m, const MaterialMaps& maps, const glm::mat4& model) {
+		bindMaterial(maps);
+		pbrShader.setMat4("model", model);
+		for (Mesh& mesh : m.meshes) {
+			glBindVertexArray(mesh.VAO);
+			glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.size()), GL_UNSIGNED_INT, 0);
+		}
+	};
 
 	// render loop
 	// -----------
@@ -632,29 +795,34 @@ int main() {
 		pbrShader.setBool("gammaEnabled", gammaCorrectionEnabled);
 		pbrShader.setBool("hdrEnabled", hdrEnabled);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, albedoMap);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, normalMap);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, metallicMap);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, roughnessMap);
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, aoMap);
-		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+		const Environment& env = environments[currentEnv];
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env.irradianceMap);
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env.prefilterMap);
+		glActiveTexture(GL_TEXTURE8);
+		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
 
-		// render rows*column number of spheres with material properties defined by textures (they all have the same material properties)
-		glBindVertexArray(sphereVAO);
-		for (int row = 0; row < nrRows; ++row) {
-			for (int col = 0; col < nrColumns; ++col) {
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(
-					(float)(col - (nrColumns / 2)) * spacing,
-					(float)(row - (nrRows / 2)) * spacing,
-					0.0f
-				));
+		if (currentScene == 2) {
+			// the FBX stands on its barrel axis (Y) in centimeters: lay it flat with Z as up, scale to ~8 units and center it
+			model = glm::mat4(1.0f);
+			model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::scale(model, glm::vec3(0.05f));
+			model = glm::translate(model, glm::vec3(3.7f, 52.2f, 14.2f));
+			drawModel(gun, gunMaterial, model);
+		} else if (currentScene == 1) {
+			// Model ignores node transforms: redo the glTF node's 90 degree X rotation that stands the Z-up mesh upright
+			model = glm::scale(glm::mat4(1.0f), glm::vec3(2.5f));
+			model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+			drawModel(helmet, helmetMaterial, model);
+		} else {
+			// one sphere per material in a row, centered on the origin
+			glBindVertexArray(sphereVAO);
+			int sphereCount = static_cast<int>(sphereMaterials.size());
+			for (int i = 0; i < sphereCount; ++i) {
+				bindMaterial(sphereMaterials[i]);
+				model = glm::translate(glm::mat4(1.0f), glm::vec3((i - sphereCount / 2) * spacing, 0.0f, 0.0f));
 				pbrShader.setMat4("model", model);
 				glDrawElements(GL_TRIANGLE_STRIP, sphereIndexCount, GL_UNSIGNED_INT, 0);
 			}
@@ -667,7 +835,7 @@ int main() {
 		backgroundShader.setBool("gammaEnabled", gammaCorrectionEnabled);
 		backgroundShader.setBool("hdrEnabled", hdrEnabled);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env.envCubemap);
 		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
